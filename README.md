@@ -5,6 +5,7 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 
 | Name | Type | Required | Default | Notes |
 |------|------|----------|---------|-------|
+| factory | ResourceFactory | Y |  | an instance of a resource factory |
 | minSize | integer | N | 0 | Specifies the minimum pool size. |
 | maxSize | integer | N |   | Specifies the maximum pool size. |
 | concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time. |
@@ -13,6 +14,13 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 | validateTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | destroyTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. |
+
+```js
+const { Pool } = require('x-pool');
+const MyCustomFactory = require('./MyCustomFactory');
+const factory = new MyCustomFactory();
+const pool = new Pool({ factory, acquireTimeout: 5000 }); 
+```
 
 ## API
 
