@@ -15,6 +15,7 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 
 ### Pool.acquire
 Acquires and validates a resource from the pool, creating one if necessary as long as the maximum pool size has not been reached. If the pool is exhausted this function will block until a resource becomes available or the acquireTimeout is exceeded. Resources obtained after the timeout is exceeded will be returned to the pool or destroyed if the pool is full.
+
 ```js
 const resource = await pool.acquire();
 ```
