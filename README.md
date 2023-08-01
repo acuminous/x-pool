@@ -9,9 +9,10 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 | maxSize | integer | N |   | Specifies the maximum pool size. |
 | concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time. |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
-| createTimeout | integer | Y |  | The number of milliseconds the pool will wait for the factory to create a resource. |
-| validateTimeout | integer | Y | | The number of milliseconds the pool will wait for the factory to validate a resource. |
-| shutdownTimeout | integer | Y | | The number of milliseconds the pool will wait to shutdown. |
+| createTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to create a resource. |
+| validateTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
+| destroyTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
+| shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. |
 
 ## API
 
@@ -54,7 +55,7 @@ Returns the following of statistics about the pool
 | available | integer | The number of resources available from the pool (idle + spare) |
 
 ### Pool.shutdown() : Promise<void>
-Shutsdown the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests any idle resources will be destroyed. The method blocks until shutdown is complete or until the shutdownTimeout expires. Calling shutdown repeatedly 
+Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests any idle resources will be destroyed. The method blocks until shutdown is complete or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
 
 ```js
 await pool.shutdown();
@@ -82,6 +83,9 @@ pool.on(XPoolErrorEvent.code, (err) => {
 
 | Event | Notes |
 |-------|-------|
-| EVT_X-POOL_RESOURCE_CREATION_FAILED | The factory yielded an error when creating a resource |
-| EVT_X-POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error when validating a resource | 
-| EVT_X-POOL_RESOURCE_DESTRUCTION_FAILED | The factory yielded an error when destroying a resource |
+| EVT_X-POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
+| EVT_X-POOL_RESOURCE_CREATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
+| EVT_X-POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
+| EVT_X-POOL_RESOURCE_VALIDATION_TIMEDOUT | The validateResource timeout was exceeded while validating a resource | 
+| EVT_X-POOL_RESOURCE_DESTROY_FAILED | The factory yielded an error while destroying a resource |
+| EVT_X-POOL_RESOURCE_DESTROY_TIMEDOUT | The destroyResource timeout was exceeded while validating a resource | 
