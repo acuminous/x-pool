@@ -5,9 +5,9 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 
 | Name | Type | Required | Default | Notes |
 |------|------|----------|---------|-------|
-| minSize | integer |  | 0 | Specifies the minimum pool size. |
-| maxSize | integer |  |   | Specifies the maximum pool size. |
-| concurrency | integer |  | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time. |
+| minSize | integer | N | 0 | Specifies the minimum pool size. |
+| maxSize | integer | N |   | Specifies the maximum pool size. |
+| concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time. |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
 | createTimeout | integer | Y |  | The number of milliseconds the pool will wait for the factory to create a resource. |
 | validateTimeout | integer | Y | | The number of milliseconds the pool will wait for the factory to validate a resource. |
@@ -66,8 +66,8 @@ await pool.shutdown();
 | ERR_X-POOL_TIMEDOUT | The shutdown timeout was exceeded |
 | ERR_X-POOL_SHUTDOWN | The pool has been shutdown |
 
-## Events
-Resources can break while idel. Resource creation / validation can fail after the request has timedout. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, but if not handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
+## Error Events
+Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, but if not handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
 
 ```js
 const { Events } = require('x-pool');
@@ -82,7 +82,6 @@ pool.on(XPoolErrorEvent.code, (err) => {
 
 | Event | Notes |
 |-------|-------|
-| EVT_X-POOL_RESOURCE_CREATION_FAILED | |
-| EVT_X-POOL_RESOURCE_VALIDATION_FAILED | | 
-| EVT_X-POOL_RESOURCE_DESTRUCTION_FAILED | |
-
+| EVT_X-POOL_RESOURCE_CREATION_FAILED | The factory yielded an error when creating a resource |
+| EVT_X-POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error when validating a resource | 
+| EVT_X-POOL_RESOURCE_DESTRUCTION_FAILED | The factory yielded an error when destroying a resource |
