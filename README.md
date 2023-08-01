@@ -80,6 +80,7 @@ pool.on(XPoolResourceCreationEvent.code, (err) => {
 pool.on(XPoolErrorEvent.code, (err) => {
   // Handle all error events in a general way
 });
+```
 
 | Event | Notes |
 |-------|-------|
