@@ -37,7 +37,7 @@ try {
 |------|-------|
 | ERR_X-POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
 
-## Factories
+## Custom Factories
 A factory is a user implemented object which must expose the following three methods:
 
 ### create() : Promise<T>
@@ -49,6 +49,7 @@ Must yield if the resource is confirmed to be working or reject if the resource 
 ### destroy(resource: T) : Promise<void>
 Must destroy the supplied resource or reject if the resource could not be destroyed.
 
+### Example
 ```js
 module.exports = class DatabaseFactory {
   constructor(options) {
