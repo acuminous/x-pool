@@ -23,22 +23,41 @@ try {
 | factory | ResourceFactory | Y |  | an instance of a resource factory |
 | minSize | integer | N | 0 | Specifies the minimum pool size. |
 | maxSize | integer | N | Infinity  | Specifies the maximum pool size. |
-| concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time. |
+| concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time). |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
 | createTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to create a resource. |
 | validateTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | destroyTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
+| initialiseTimeout | integer | N | | The number of milliseconds the pool will wait to initialise. |
 | shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. |
+| validateInterval | integer | N | | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
 
 #### Errors
 | Code | Notes |
 |------|-------|
 | ERR_X-POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
 
-## API
+## Factories
+A factory is a user implemented object which must expose the following three methods
 
-### Pool.acquire() : Promise<T>
+### create() : Promise<T>
+Must yield a new resource or reject if the resource could not be created.
+
+### validate(resource: T) : Promise<boolean>
+Must yield true if the resource is confirmed to be working and false otherwise.
+
+### destroy(resource: T) : Promise<void>
+Must destroy the supplied resource or reject if the resource could not be destroyed.
+
+## Pool API
+
+### initialise() : Promise<void>
+Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded.
+
+### acquire() : Promise<T>
 Acquires and validates a resource from the pool, creating one if necessary as long as the maximum pool size has not been reached. If the pool is exhausted this function will block until a resource becomes available or the acquireTimeout is exceeded. Resources obtained after the timeout is exceeded will be returned to the pool or destroyed if the pool is full.
+
+There are equally strong arguments to re-issue the most recently used as it is most likely to be working, or the least recently used so that resources with permanent network connections are less likely to time out. x-pool deliberately offers no guarantees of the order in which idle resources are re-issued because these problems are better solved by keeping the resources warm via the `validateInterval` configuration option.
 
 ```js
 const resource = await pool.acquire();
@@ -50,21 +69,21 @@ const resource = await pool.acquire();
 | ERR_X-POOL_TIMEDOUT | The acquire timeout was exceeded |
 | ERR_X-POOL_SHUTDOWN | The pool has been shutdown |
 
-### Pool.release(resource: T) : void
+### release(resource: T) : void
 Returns a resource to the pool. If the resource is not managed it will be discarded without error.
 
 ```js
 pool.release(resource);
 ```
 
-### Pool.destroy() : void
+### destroy() : void
 Instructs the pool to destroy a resource instead of returning it to the pool, which is useful if you know the resource is broken. The act of destroying a resource is asynchronous but is completed in the background so the destroy method returns instantly.
 
 ```js
 pool.destroy(resource);
 ```
 
-### Pool.stats() : PoolStats
+### stats() : PoolStats
 Returns the following of statistics about the pool
 
 | Name | Type | Notes |
@@ -75,7 +94,7 @@ Returns the following of statistics about the pool
 | spare | integer | The number of resources that can still be created. Will be `Infinity` if no maxSize is set |
 | available | integer | The number of resources available from the pool (idle + spare) |
 
-### Pool.shutdown() : Promise<void>
+### shutdown() : Promise<void>
 Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests any idle resources will be destroyed. The method blocks until shutdown is complete or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
 
 ```js
