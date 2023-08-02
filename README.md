@@ -40,7 +40,7 @@ try {
 ## Custom Factories
 A factory is a user implemented object which must expose the following three methods:
 
-### create() : Promise<T>
+### create(pool) : Promise<T>
 Must yield a new resource or reject if the resource could not be created.
 
 ### validate(resource: T) : Promise<void>
@@ -96,7 +96,7 @@ There are equally strong arguments to re-issue the most recently used as it is m
 ```js
 pool.release(resource);
 ```
-Returns a resource to the pool. If the resource is not managed it will be discarded without error.
+Returns a resource to the pool. If the resource is not managed it will be discarded without error. 
 
 ### destroy() : void
 ```js
