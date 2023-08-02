@@ -4,8 +4,8 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 ## TL;DR
 ```js
 const { Pool } = require('x-pool');
-const MyCustomFactory = require('./MyCustomFactory');
-const factory = new MyCustomFactory();
+const CustomResourceFactory = require('./CustomResourceFactory');
+const factory = new CustomResourceFactory();
 const pool = new Pool({ factory, acquireTimeout: 5000 });
 
 const resource = await pool.acquire();
@@ -38,16 +38,36 @@ try {
 | ERR_X-POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
 
 ## Factories
-A factory is a user implemented object which must expose the following three methods
+A factory is a user implemented object which must expose the following three methods:
 
 ### create() : Promise<T>
 Must yield a new resource or reject if the resource could not be created.
 
-### validate(resource: T) : Promise<boolean>
-Must yield true if the resource is confirmed to be working and false otherwise.
+### validate(resource: T) : Promise<void>
+Must yield if the resource is confirmed to be working or reject if the resource is found to be broken.
 
 ### destroy(resource: T) : Promise<void>
 Must destroy the supplied resource or reject if the resource could not be destroyed.
+
+```js
+module.exports = class DatabaseFactory {
+  constructor(options) {
+    this._options = options;
+  }
+
+  async create() {
+    return db.connect(this._options);
+  }
+
+  async validate(client) {
+    await client.query('SELECT 1');
+  }
+
+  async destroy(client) {
+    await client.close();
+  }
+}
+```
 
 ## Pool API
 
