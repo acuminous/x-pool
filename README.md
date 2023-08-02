@@ -134,13 +134,13 @@ Shuts down the pool. After calling shutdown any inflight acquisition requests wi
 Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, and if not explicitly handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
 
 ```js
-const { Events } = require('x-pool');
-const { XPoolResourceCreationEvent, XPoolErrorEvent } = Events;
+const { Errors } = require('x-pool');
+const { ResourceCreationFailed, XPoolError } = Errors;
 
-pool.on(XPoolResourceCreationFailedEvent.code, (err) => {
+pool.on(ResourceCreationFailed.code, (err) => {
   // Handle the resource creation failed error event in a specific way
 });
-pool.on(XPoolErrorEvent.code, (err) => {
+pool.on(XPoolError.code, (err) => {
   // Handle all other error events in a general way
 });
 ```
