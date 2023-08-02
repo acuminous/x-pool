@@ -93,20 +93,21 @@ There are equally strong arguments to re-issue the most recently used as it is m
 | ERR_X-POOL_SHUTDOWN | The pool has been shutdown |
 
 ### release(resource: T) : void
-Returns a resource to the pool. If the resource is not managed it will be discarded without error.
-
 ```js
 pool.release(resource);
 ```
+Returns a resource to the pool. If the resource is not managed it will be discarded without error.
 
 ### destroy() : void
-Instructs the pool to destroy a resource instead of returning it to the pool, which is useful if you know the resource is broken. The act of destroying a resource is asynchronous but is completed in the background so the destroy method returns instantly.
-
 ```js
 pool.destroy(resource);
 ```
+Instructs the pool to destroy a resource instead of returning it to the pool, which is useful if you know the resource is broken. The act of destroying a resource is asynchronous but is completed in the background so the destroy method returns instantly.
 
 ### stats() : PoolStats
+```js
+const { size, acquired, idle, spare, available } = pool.stats();
+```
 Returns the following of statistics about the pool
 
 | Name | Type | Notes |
@@ -118,11 +119,10 @@ Returns the following of statistics about the pool
 | available | integer | The number of resources available from the pool (idle + spare) |
 
 ### shutdown() : Promise<void>
-Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests any idle resources will be destroyed. The method blocks until shutdown is complete or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
-
 ```js
 await pool.shutdown();
 ```
+Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests any idle resources will be destroyed. The method blocks until shutdown is complete or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
 
 #### Errors
 | Code | Notes |
