@@ -23,6 +23,11 @@ const pool = new Pool({ factory, acquireTimeout: 5000 });
 | destroyTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. |
 
+#### Errors
+| Code | Notes |
+|------|-------|
+| ERR_X-POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
+
 ## API
 
 ### Pool.acquire() : Promise<T>
