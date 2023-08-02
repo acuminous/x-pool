@@ -15,7 +15,7 @@ const pool = new Pool({ factory, acquireTimeout: 5000 });
 |------|------|----------|---------|-------|
 | factory | ResourceFactory | Y |  | an instance of a resource factory |
 | minSize | integer | N | 0 | Specifies the minimum pool size. |
-| maxSize | integer | N |   | Specifies the maximum pool size. |
+| maxSize | integer | N | Infinity  | Specifies the maximum pool size. |
 | concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time. |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
 | createTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to create a resource. |
