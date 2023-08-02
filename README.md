@@ -122,26 +122,26 @@ Returns the following of statistics about the pool
 ```js
 await pool.shutdown();
 ```
-Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests any idle resources will be destroyed. The method blocks until shutdown is complete or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
+Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests the remaining idle resources will be destroyed. The method blocks until all resources have been destroyed or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
 
 #### Errors
 | Code | Notes |
 |------|-------|
 | ERR_X-POOL_TIMEDOUT | The shutdown timeout was exceeded |
-| ERR_X-POOL_SHUTDOWN | The pool has been shutdown |
+| ERR_X-POOL_SHUTDOWN | The pool has been shutdown or is already in the process of shutting down |
 
 ## Error Events
-Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, but if not handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
+Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, and if not explicitly handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
 
 ```js
 const { Events } = require('x-pool');
 const { XPoolResourceCreationEvent, XPoolErrorEvent } = Events;
 
-pool.on(XPoolResourceCreationEvent.code, (err) => {
-  // Handle an error event in a specific way
+pool.on(XPoolResourceCreationFailedEvent.code, (err) => {
+  // Handle the resource creation failed error event in a specific way
 });
 pool.on(XPoolErrorEvent.code, (err) => {
-  // Handle all error events in a general way
+  // Handle all other error events in a general way
 });
 ```
 
