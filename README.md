@@ -73,16 +73,18 @@ module.exports = class DatabaseFactory {
 ## Pool API
 
 ### initialise() : Promise<void>
-Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded.
+```js
+const resource = await pool.initialise();
+```
+Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded. You do not need to wait for the pool to initialise, however it is recommented in order to ensure your factory is correctly configured and has access to the required systems.
 
 ### acquire() : Promise<T>
-Acquires and validates a resource from the pool, creating one if necessary as long as the maximum pool size has not been reached. If the pool is exhausted this function will block until a resource becomes available or the acquireTimeout is exceeded. Resources obtained after the timeout is exceeded will be returned to the pool or destroyed if the pool is full.
-
-There are equally strong arguments to re-issue the most recently used as it is most likely to be working, or the least recently used so that resources with permanent network connections are less likely to time out. x-pool deliberately offers no guarantees of the order in which idle resources are re-issued because these problems are better solved by keeping the resources warm via the `validateInterval` configuration option.
-
 ```js
 const resource = await pool.acquire();
 ```
+Acquires and validates a resource from the pool, creating one if necessary as long as the maximum pool size has not been reached. If the pool is exhausted this function will block until a resource becomes available or the acquireTimeout is exceeded. Resources obtained after the timeout is exceeded will be returned to the pool or destroyed if the pool is full.
+
+There are equally strong arguments to re-issue the most recently used as it is most likely to be working, or the least recently used so that resources with permanent network connections are less likely to time out. x-pool deliberately offers no guarantees of the order in which idle resources are re-issued because these problems are better solved by keeping the resources warm via the `validateInterval` configuration option.
 
 #### Errors
 | Code | Notes |
