@@ -25,6 +25,7 @@ try {
 | maxSize | integer | N | Infinity  | Specifies the maximum pool size. |
 | concurrency | integer | N | | Specifies the pool concurrency (i.e. how many resources it will create, validate and destroy at the same time). |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
+| acquireRetryInterval | integer | N | 100 | The number of milliseconds the pool will wait before retrying resource acquision after a failure. |
 | createTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to create a resource. |
 | validateTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | destroyTimeout | integer | N | | The number of milliseconds the pool will wait for the factory to validate a resource. |
