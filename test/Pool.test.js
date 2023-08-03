@@ -1,4 +1,4 @@
-const { strictEqual: eq, ok, rejects, throws } = require('node:assert');
+const { strictEqual: eq, ok, rejects, throws, fail } = require('node:assert');
 const { setTimeout } = require('node:timers/promises');
 const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
@@ -139,6 +139,19 @@ describe('Pool', () => {
       const resources = [{ createError: 'Oh Noes!' }, 'R2'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
+
+      const resource = await pool.acquire();
+      eq(resource, 'R2');
+    });
+
+    it('should not attempt to validate after a creation error', async () => {
+      const resources = [{ createError: 'Oh Noes!' }, 'R2'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      pool.once('ERR_X-POOL_RESOURCE_VALIDATION_FAILED', (err) => {
+        fail('Attempted to validate a resource after creation failure');
+      });
 
       const resource = await pool.acquire();
       eq(resource, 'R2');
