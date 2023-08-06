@@ -149,7 +149,7 @@ describe('Pool', () => {
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
 
-      pool.once('ERR_X-POOL_RESOURCE_VALIDATION_FAILED', (err) => {
+      pool.once('ERR_X-POOL_RESOURCE_VALIDATION_FAILED', () => {
         fail('Attempted to validate a resource after creation failure');
       });
 
@@ -300,6 +300,23 @@ describe('Pool', () => {
 
       const { size, idle } = pool.stats();
       eq(0, size);
+      eq(0, idle);
+    });
+  });
+
+  describe('destroy', () => {
+
+    it('should destroy a managed resource', async () => {
+      const resources = ['R1'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      const resource = await pool.acquire();
+      pool.destroy(resource);
+
+      const { size, acquired, idle } = pool.stats();
+      eq(0, size);
+      eq(0, acquired);
       eq(0, idle);
     });
   });
