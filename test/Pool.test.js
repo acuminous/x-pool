@@ -157,7 +157,7 @@ describe('Pool', () => {
       eq(resource, 'R2');
     });
 
-    it('should wait briefly between resource creation attempts', async () => {
+    it('should wait briefly between failed resource creation attempts', async () => {
       const resources = [{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, 'R3'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
@@ -197,7 +197,7 @@ describe('Pool', () => {
       await pool.acquire();
     });
 
-    it('should fallback reporting resource creation errors via a general event', async (t, done) => {
+    it('should fallback to reporting resource creation errors via a general event', async (t, done) => {
       const resources = [{ createError: 'Oh Noes!' }, 'R2'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
@@ -222,7 +222,7 @@ describe('Pool', () => {
       });
     });
 
-    it('should use resources yielded after the acquire timeout is exceeded', async () => {
+    it('should use valid resources yielded after the acquire timeout is exceeded', async () => {
       const resources = [{ createDelay: 200, value: 'R1' }];
       const factory = new TestFactory(resources);
       const pool = new Pool({ factory, acquireTimeout: 100 });
@@ -261,7 +261,7 @@ describe('Pool', () => {
       await pool.acquire();
     });
 
-    it('should fallback reporting resource validation errors via a general event', async (t, done) => {
+    it('should fallback to reporting resource validation errors via a general event', async (t, done) => {
       const resources = [{ validateError: 'Oh Noes!' }, 'R2'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
