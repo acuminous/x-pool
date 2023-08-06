@@ -113,7 +113,6 @@ Returns the following of statistics about the pool
 | size | integer | The current pool size (acquired + idle) |
 | acquired | integer | The number of resources currently in use |
 | idle | integer | The number of resources currently idling in the pool |
-| spare | integer | The number of resources that can still be created. Will be `Infinity` if no maxSize is set |
 | available | integer | The number of resources available from the pool (idle + spare) |
 
 ### shutdown() : Promise<void>
