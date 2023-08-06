@@ -1,22 +1,37 @@
-const { setTimeout } = require('node:timers/promises');
+const { scheduler } = require('node:timers/promises');
 
 module.exports = class TestFactory {
 
-  constructor(resources = []) {
-    this._resources = Array.from(resources);
+  constructor(resourceDefinitions = []) {
+    this._resourceDefinitions = resourceDefinitions.map((rd) => (typeof rd === 'string' ? { value: rd } : { value: 'X', ...rd }));
+    this._index = 0;
   }
 
   async create() {
-    const resource = this._resources.shift();
-    if (resource.createDelay) await setTimeout(resource.createDelay);
-    if (resource.createError) throw new Error(resource.createError);
-    return resource.value || resource;
+    const rd = this._resourceDefinitions[this._index++];
+    if (rd.createDelay) await scheduler.wait(rd.createDelay);
+    if (rd.createError) throw new Error(rd.createError);
+    return rd.value;
   }
 
   async validate(resource) {
-    if (resource.validateError) throw new Error(resource.validateError);
+    const rd = this._findResourceDefinition(resource);
+    if (rd.validateError) throw new Error(rd.validateError);
   }
 
-  async destroy() {
+  async destroy(resource) {
+    const rd = this._findResourceDefinition(resource);
+    if (rd.destroyDelay) await scheduler.wait(rd.destroyDelay);
+    if (rd.destroyError) throw new Error(rd.destroyError);
+    rd.destroyed = true;
+  }
+
+  _findResourceDefinition(resource) {
+    return this._resourceDefinitions.find((rd) => rd.value === resource);
+  }
+
+  wasDestroyed(resource) {
+    const rd = this._findResourceDefinition(resource);
+    return rd.destroyed;
   }
 };

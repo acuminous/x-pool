@@ -1,5 +1,5 @@
 const { strictEqual: eq, ok, rejects, throws, fail } = require('node:assert');
-const { setTimeout } = require('node:timers/promises');
+const { scheduler } = require('node:timers/promises');
 const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
 const { Pool } = require('../index');
@@ -92,6 +92,36 @@ describe('Pool', () => {
         throws(() => new Pool({ factory, acquireTimeout: 1000, acquireRetryInterval: -1 }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
           eq(err.message, 'The supplied acquireRetryInterval must be at least 0ms. Please read the documentation at https://github.com/acuminous/x-pool');
+          return true;
+        });
+      });
+    });
+
+    describe('destroyTimeout', () => {
+
+      it('should require an destroyTimeout', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'destroyTimeout is a required option. Please read the documentation at https://github.com/acuminous/x-pool');
+          return true;
+        });
+      });
+
+      it('should require destroyTimeout to be a number', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: false }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The supplied destroyTimeout must be at number. Please read the documentation at https://github.com/acuminous/x-pool');
+          return true;
+        });
+      });
+
+      it('should require destroyTimeout to be at least 1ms', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 0 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The supplied destroyTimeout must be at least 1ms. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -214,7 +244,7 @@ describe('Pool', () => {
     it('should reject when the acquire timeout is exceeded', async () => {
       const resources = [{ createDelay: 200, value: 'R1' }];
       const factory = new TestFactory(resources);
-      const pool = new Pool({ factory, acquireTimeout: 100 });
+      const pool = createPool({ factory, acquireTimeout: 100 });
 
       await rejects(() => pool.acquire(), (err) => {
         eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
@@ -225,14 +255,14 @@ describe('Pool', () => {
     it('should use valid resources yielded after the acquire timeout is exceeded', async () => {
       const resources = [{ createDelay: 200, value: 'R1' }];
       const factory = new TestFactory(resources);
-      const pool = new Pool({ factory, acquireTimeout: 100 });
+      const pool = createPool({ factory, acquireTimeout: 100 });
 
       await rejects(() => pool.acquire(), (err) => {
         eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
         return true;
       });
 
-      await setTimeout(200);
+      await scheduler.wait(200);
 
       const resource = await pool.acquire();
       eq(resource, 'R1');
@@ -278,7 +308,7 @@ describe('Pool', () => {
 
   describe('release', () => {
 
-    it('should release a managed resource', async () => {
+    it('should release the given managed resource', async () => {
       const resources = ['R1'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
@@ -306,7 +336,7 @@ describe('Pool', () => {
 
   describe('destroy', () => {
 
-    it('should destroy a managed resource', async () => {
+    it('should remove the given managed resource from the pool', async () => {
       const resources = ['R1'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
@@ -319,6 +349,82 @@ describe('Pool', () => {
       eq(0, acquired);
       eq(0, idle);
     });
+
+    it('should destroy the given managed resource eventually', async (t, done) => {
+      const resources = ['R1'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      const resource = await pool.acquire();
+      pool.destroy(resource);
+
+      const timerId = setInterval(() => {
+        if (!factory.wasDestroyed(resource)) return;
+        clearInterval(timerId);
+        done();
+      }).unref();
+    });
+
+    it('should report resource destruction errors via a specific event', async (t, done) => {
+      const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', (err) => {
+        eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
+        eq(err.cause.message, 'Oh Noes!');
+        done();
+      });
+
+      const resource = await pool.acquire();
+      pool.destroy(resource);
+    });
+
+    it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
+      const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      pool.once('ERR_X-POOL_ERROR', (err) => {
+        eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
+        eq(err.cause.message, 'Oh Noes!');
+        done();
+      });
+
+      const resource = await pool.acquire();
+      pool.destroy(resource);
+    });
+
+    it('should report resource destruction that exceed the destroyTimeout', async (t, done) => {
+      const resources = [{ destroyDelay: 200, value: 'R1' }];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, destroyTimeout: 100 });
+
+      pool.once('ERR_X-POOL_OPERATION_TIMEDOUT', (err) => {
+        eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+        eq(err.message, 'destroy timedout after 100ms');
+        done();
+      });
+
+      const resource = await pool.acquire();
+      pool.destroy(resource);
+    });
+
+    it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
+      const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      pool.once('ERR_X-POOL_ERROR', (err) => {
+        eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
+        eq(err.cause.message, 'Oh Noes!');
+        done();
+      });
+
+      const resource = await pool.acquire();
+      pool.destroy(resource);
+    });
+
   });
 
   describe('stats', () => {
@@ -384,8 +490,8 @@ describe('Pool', () => {
   });
 });
 
-function createPool({ factory, acquireTimeout = 1000, acquireRetryInterval }) {
-  return new Pool({ factory, acquireTimeout, acquireRetryInterval });
+function createPool({ factory, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
+  return new Pool({ factory, acquireTimeout, acquireRetryInterval, destroyTimeout });
 }
 
 function acquireResources(pool, count) {
