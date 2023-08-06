@@ -6,7 +6,7 @@ X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/
 const { Pool } = require('x-pool');
 const CustomResourceFactory = require('./CustomResourceFactory');
 const factory = new CustomResourceFactory();
-const pool = new Pool({ factory, acquireTimeout: 5000 });
+const pool = new Pool({ factory, acquireTimeout: 5000, destroyTimeout: 5000 });
 
 const resource = await pool.acquire();
 try {
