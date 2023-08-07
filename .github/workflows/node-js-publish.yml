@@ -21,8 +21,10 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Check code
+      - name: Lint
         run: npm run lint
+
+      - name: Test
         run: npm test
 
   publish-npm:
