@@ -36,6 +36,7 @@ try {
 | revalidateInterval | integer | N | | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
 
 #### Errors
+
 | Code | Notes |
 |------|-------|
 | ERR_X&#8209;POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
@@ -90,6 +91,7 @@ Acquires and validates a resource from the pool, creating one if necessary as lo
 There are equally strong arguments to re-issue the most recently used reosurce as as the least recently used. X-Pool deliberately offers no guarantees of the order in which idle resources are re-issued, and instead provides the option of keeping the resources warm by revalidating idle resources reguarly via the `revalidateInterval` configuration option.
 
 #### Errors
+
 | Code | Notes |
 |------|-------|
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded |
@@ -135,6 +137,7 @@ await pool.shutdown();
 Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests the remaining idle resources will be destroyed. The method blocks until all resources have been destroyed or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
 
 #### Errors
+
 | Code | Notes |
 |------|-------|
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded |
