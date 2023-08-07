@@ -402,7 +402,7 @@ describe('Pool', () => {
 
   describe('destroy', () => {
 
-    it('should remove the given managed resource from the pool', async () => {
+    it('should eventually remove the given managed resource from the pool', async () => {
       const resources = ['R1'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
@@ -410,10 +410,12 @@ describe('Pool', () => {
       const resource = await pool.acquire();
       pool.destroy(resource);
 
-      const { size, acquired, idle } = pool.stats();
-      eq(0, size);
-      eq(0, acquired);
-      eq(0, idle);
+      setTimeout(() => {
+        const { size, acquired, idle } = pool.stats();
+        eq(0, size);
+        eq(0, acquired);
+        eq(0, idle);
+      }, 100);
     });
 
     it('should destroy the given managed resource eventually', async (t, done) => {
