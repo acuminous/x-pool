@@ -16,6 +16,7 @@ module.exports = class TestFactory {
 
   async validate(resource) {
     const rd = this._findResourceDefinition(resource);
+    rd.validated = new Date();
     if (rd.validateError) throw new Error(rd.validateError);
   }
 
@@ -23,7 +24,7 @@ module.exports = class TestFactory {
     const rd = this._findResourceDefinition(resource);
     if (rd.destroyDelay) await scheduler.wait(rd.destroyDelay);
     if (rd.destroyError) throw new Error(rd.destroyError);
-    rd.destroyed = true;
+    rd.destroyed = new Date();
   }
 
   _findResourceDefinition(resource) {

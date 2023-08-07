@@ -28,7 +28,7 @@ try {
 | destroyTimeout | integer | Y | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | initialiseTimeout | integer | N | | The number of milliseconds the pool will wait to initialise. |
 | shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. |
-| validateInterval | integer | N | | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
+| revalidateInterval | integer | N | | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
 
 #### Errors
 | Code | Notes |
@@ -82,7 +82,7 @@ const resource = await pool.acquire();
 ```
 Acquires and validates a resource from the pool, creating one if necessary as long as the optional maximum pool size has not been reached. If the pool is exhausted this method will block until a resource becomes available or the acquireTimeout is exceeded. If the acquireTimeout is exceed the method will reject. Resources created after the timeout is exceeded will be added to the pool.
 
-There are equally strong arguments to re-issue the most recently used reosurce as as the least recently used. X-Pool deliberately offers no guarantees of the order in which idle resources are re-issued, and instead provides the option of keeping the resources warm by revalidating idle resources reguarly via the `validateInterval` configuration option.
+There are equally strong arguments to re-issue the most recently used reosurce as as the least recently used. X-Pool deliberately offers no guarantees of the order in which idle resources are re-issued, and instead provides the option of keeping the resources warm by revalidating idle resources reguarly via the `revalidateInterval` configuration option.
 
 #### Errors
 | Code | Notes |
