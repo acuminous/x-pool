@@ -38,5 +38,8 @@
   "bugs": {
     "url": "https://github.com/acuminous/x-pool/issues"
   },
-  "homepage": "https://github.com/acuminous/x-pool#readme"
+  "homepage": "https://github.com/acuminous/x-pool#readme",
+  "dependencies": {
+    "debug": "^4.3.4"
+  }
 }

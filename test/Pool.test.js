@@ -61,7 +61,7 @@ describe('Pool', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: false }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The supplied acquireTimeout must be at number. Please read the documentation at https://github.com/acuminous/x-pool');
+          eq(err.message, 'The acquireTimeout option must be a number. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -70,7 +70,7 @@ describe('Pool', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 0 }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The supplied acquireTimeout must be at least 1ms. Please read the documentation at https://github.com/acuminous/x-pool');
+          eq(err.message, 'The acquireTimeout option must be at least 1. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -82,7 +82,7 @@ describe('Pool', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, acquireRetryInterval: false }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The supplied acquireRetryInterval must be at number. Please read the documentation at https://github.com/acuminous/x-pool');
+          eq(err.message, 'The acquireRetryInterval option must be a number. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -91,7 +91,7 @@ describe('Pool', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, acquireRetryInterval: -1 }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The supplied acquireRetryInterval must be at least 0ms. Please read the documentation at https://github.com/acuminous/x-pool');
+          eq(err.message, 'The acquireRetryInterval option must be at least 0. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -112,7 +112,7 @@ describe('Pool', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: false }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The supplied destroyTimeout must be at number. Please read the documentation at https://github.com/acuminous/x-pool');
+          eq(err.message, 'The destroyTimeout option must be a number. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -121,7 +121,28 @@ describe('Pool', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 0 }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The supplied destroyTimeout must be at least 1ms. Please read the documentation at https://github.com/acuminous/x-pool');
+          eq(err.message, 'The destroyTimeout option must be at least 1. Please read the documentation at https://github.com/acuminous/x-pool');
+          return true;
+        });
+      });
+    });
+
+    describe('maxSize', () => {
+
+      it('should require maxSize to be a number', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: false }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The maxSize option must be a number. Please read the documentation at https://github.com/acuminous/x-pool');
+          return true;
+        });
+      });
+
+      it('should require maxSize to be at least 1', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: 0 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The maxSize option must be at least 1. Please read the documentation at https://github.com/acuminous/x-pool');
           return true;
         });
       });
@@ -304,6 +325,51 @@ describe('Pool', () => {
 
       await pool.acquire();
     });
+
+    it('should block requests once the maximum pool size has been reached', async () => {
+      const resources = ['R1'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
+
+      await pool.acquire();
+
+      await rejects(() => pool.acquire(), (err) => {
+        eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+        return true;
+      });
+    });
+
+    it('should unblock requests once a resource is released', async () => {
+      const resources = ['R1'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
+
+      const resource1 = await pool.acquire();
+      setTimeout(() => pool.release(resource1), 100);
+
+      const before = Date.now();
+      const resource2 = await pool.acquire();
+      const after = Date.now();
+
+      ok(after - before >= 100, 'Pool was not temporarily blocked');
+      eq(resource2, 'R1');
+    });
+
+    it('should unblock requests once a resource is destroyed', async () => {
+      const resources = ['R1', 'R2'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
+
+      const resource1 = await pool.acquire();
+      setTimeout(() => pool.destroy(resource1), 100);
+
+      const before = Date.now();
+      const resource2 = await pool.acquire();
+      const after = Date.now();
+
+      ok(after - before >= 100, 'Pool was not temporarily blocked');
+      eq(resource2, 'R2');
+    });
   });
 
   describe('release', () => {
@@ -433,11 +499,10 @@ describe('Pool', () => {
       const factory = new TestFactory();
       const pool = createPool({ factory });
 
-      const { size, acquired, idle, spare, available } = pool.stats();
+      const { size, acquired, idle, available } = pool.stats();
       eq(0, size);
       eq(0, acquired);
       eq(0, idle);
-      eq(Infinity, spare);
       eq(Infinity, available);
     });
 
@@ -448,11 +513,10 @@ describe('Pool', () => {
 
       await acquireResources(pool, 3);
 
-      const { size, acquired, idle, spare, available } = pool.stats();
+      const { size, acquired, idle, available } = pool.stats();
       eq(3, size);
       eq(3, acquired);
       eq(0, idle);
-      eq(Infinity, spare);
       eq(Infinity, available);
     });
 
@@ -464,11 +528,10 @@ describe('Pool', () => {
       const [resource1, resource2, resource3] = await acquireResources(pool, 3);
       releaseResources(pool, [resource1, resource2, resource3]);
 
-      const { size, acquired, idle, spare, available } = pool.stats();
+      const { size, acquired, idle, available } = pool.stats();
       eq(3, size);
       eq(0, acquired);
       eq(3, idle);
-      eq(Infinity, spare);
       eq(Infinity, available);
     });
 
@@ -480,18 +543,32 @@ describe('Pool', () => {
       const [resource1, resource2] = await acquireResources(pool, 3);
       releaseResources(pool, [resource1, resource2]);
 
-      const { size, acquired, idle, spare, available } = pool.stats();
+      const { size, acquired, idle, available } = pool.stats();
       eq(3, size);
       eq(1, acquired);
       eq(2, idle);
-      eq(Infinity, spare);
       eq(Infinity, available);
+    });
+
+    it('should report stats for a pool with a maximum size', async () => {
+      const resources = ['R1', 'R2', 'R3'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, maxSize: 10 });
+
+      const [resource1, resource2] = await acquireResources(pool, 3);
+      releaseResources(pool, [resource1, resource2]);
+
+      const { size, acquired, idle, available } = pool.stats();
+      eq(3, size);
+      eq(1, acquired);
+      eq(2, idle);
+      eq(9, available);
     });
   });
 });
 
-function createPool({ factory, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
-  return new Pool({ factory, acquireTimeout, acquireRetryInterval, destroyTimeout });
+function createPool({ factory, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000, maxSize }) {
+  return new Pool({ factory, acquireTimeout, acquireRetryInterval, destroyTimeout, maxSize });
 }
 
 function acquireResources(pool, count) {
