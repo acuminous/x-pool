@@ -1,5 +1,5 @@
 {
-  "name": "x-pool",
+  "name": "y",
   "version": "1.0.0",
   "description": "A generic resource pool",
   "main": "index.js",
@@ -39,7 +39,7 @@
   "bugs": {
     "url": "https://github.com/acuminous/x-pool/issues"
   },
-  "homepage": "https://github.com/acuminous/x-pool#readme",
+  "homepage": "https://acuminous.github.io/x-pool",
   "dependencies": {
     "debug": "^4.3.4"
   }
