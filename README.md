@@ -80,9 +80,9 @@ Initialisise the pool, only yielding after the minimum number of resources have 
 ```js
 const resource = await pool.acquire();
 ```
-Acquires and validates a resource from the pool, creating one if necessary as long as the maximum pool size has not been reached. If the pool is exhausted this function will block until a resource becomes available or the acquireTimeout is exceeded. Resources obtained after the timeout is exceeded will be returned to the pool or destroyed if the pool is full.
+Acquires and validates a resource from the pool, creating one if necessary as long as the optional maximum pool size has not been reached. If the pool is exhausted this method will block until a resource becomes available or the acquireTimeout is exceeded. If the acquireTimeout is exceed the method will reject. Resources created after the timeout is exceeded will be added to the pool.
 
-There are equally strong arguments to re-issue the most recently used as it is most likely to be working, or the least recently used so that resources with permanent network connections are less likely to time out. X-Pool deliberately offers no guarantees of the order in which idle resources are re-issued because these problems are better solved by keeping the resources warm via the `validateInterval` configuration option.
+There are equally strong arguments to re-issue the most recently used reosurce as as the least recently used. X-Pool deliberately offers no guarantees of the order in which idle resources are re-issued, and instead provides the option of keeping the resources warm by revalidating idle resources reguarly via the `validateInterval` configuration option.
 
 #### Errors
 | Code | Notes |
@@ -100,20 +100,28 @@ Returns a resource to the pool. If the resource is not managed it will be discar
 ```js
 pool.destroy(resource);
 ```
-Instructs the pool to destroy a resource instead of returning it to the pool, which is useful if you know the resource is broken. The act of destroying a resource is asynchronous but is completed in the background so the destroy method returns instantly.
+Instructs the pool to destroy a resource instead of returning it to the pool. The act of destroying a resource is performed in the background so the destroy method returns instantly. If the destroy operation fails or times out the resource still takes up space within the pool, although it will never be re-issued. Where the pool has been configured with a maximum size, this could lead to resource contention impacting performance. In extreme cases it could even lead to all the pool becoming unusable. If you are concerned about this possibility then you can listen for the pool `ERR_X-POOL_RESOURCE_DESTROY_FAILED` and `ERR_X-POOL_OPERATION_TIMEDOUT` events call `pool.evictBadResources()` when they occur.
+
+### evictBadResources() : void
+```js
+pool.evictBadResources();
+```
+Evicts resources that failed to be destroyed.
 
 ### stats() : PoolStats
 ```js
-const { size, acquired, idle, spare, available } = pool.stats();
+const { size, acquired, idle, spare, available, bad } = pool.stats();
 ```
 Returns the following of statistics about the pool
 
 | Name | Type | Notes |
 |------|------|-------|
-| size | integer | The current pool size (acquired + idle) |
-| acquired | integer | The number of resources currently in use |
+| size | integer | The current pool size (idle + acquired + bad) |
 | idle | integer | The number of resources currently idling in the pool |
-| available | integer | The number of resources available from the pool (idle + spare) |
+| acquired | integer | The number of resources currently in use |
+| bad | integer | The number of resourses which failed to be destroyed |
+| available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
+
 
 ### shutdown() : Promise<void>
 ```js
@@ -144,8 +152,8 @@ pool.on(XPoolError.code, (err) => {
 
 | Event | Notes |
 |-------|-------|
-| ERR_X&#8209;POOL_ERROR | Only emitted if one of the following events is not explicitly handled |
-| ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
-| ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
-| ERR_X&#8209;POOL_RESOURCE_DESTROY_FAILED | The factory yielded an error while destroying a resource |
-| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
+| ERR_X-POOL_ERROR | Only emitted if one of the following events is not explicitly handled |
+| ERR_X-POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
+| ERR_X-POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
+| ERR_X-POOL_RESOURCE_DESTROY_FAILED | The factory yielded an error while destroying a resource |
+| ERR_X-POOL_OPERATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
