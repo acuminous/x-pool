@@ -1,10 +1,10 @@
 # X-Pool
 
-X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/node-pool](https://github.com/coopernurse/node-pool) which sadly has some long standing and serious bugs [#197](https://github.com/coopernurse/node-pool/issues/197).
-
 [![Node.js CI](https://github.com/acuminous/x-pool/workflows/Node.js%20CI/badge.svg)](https://github.com/acuminous/x-pool/actions?query=workflow%3A%22Node.js+CI%22)
 [![Code Climate](https://codeclimate.com/github/acuminous/x-pool/badges/gpa.svg)](https://codeclimate.com/github/acuminous/x-pool)
 [![Test Coverage](https://codeclimate.com/github/acuminous/x-pool/badges/coverage.svg)](https://codeclimate.com/github/acuminous/x-pool/coverage)
+
+X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/node-pool](https://github.com/coopernurse/node-pool) which sadly has some long standing and serious bugs [#197](https://github.com/coopernurse/node-pool/issues/197).
 
 ## TL;DR
 ```js
