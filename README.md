@@ -33,7 +33,7 @@ try {
 #### Errors
 | Code | Notes |
 |------|-------|
-| ERR_X-POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
+| ERR_X&#8209;POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
 
 ## Custom Factories
 A factory is a user implemented object which must expose the following three methods:
@@ -87,8 +87,8 @@ There are equally strong arguments to re-issue the most recently used reosurce a
 #### Errors
 | Code | Notes |
 |------|-------|
-| ERR_X-POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded |
-| ERR_X-POOL_SHUTDOWN           | The pool has been shutdown |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded |
+| ERR_X&#8209;POOL_SHUTDOWN           | The pool has been shutdown |
 
 ### release(resource: T) : void
 ```js
@@ -100,7 +100,7 @@ Returns a resource to the pool. If the resource is not managed it will be discar
 ```js
 pool.destroy(resource);
 ```
-Instructs the pool to destroy a resource instead of returning it to the pool. The act of destroying a resource is performed in the background so the destroy method returns instantly. If the destroy operation fails or times out the resource still takes up space within the pool, although it will never be re-issued. Where the pool has been configured with a maximum size, this could lead to resource contention impacting performance. In extreme cases it could even lead to all the pool becoming unusable. If you are concerned about this possibility then you can listen for the pool `ERR_X-POOL_RESOURCE_DESTROY_FAILED` and `ERR_X-POOL_OPERATION_TIMEDOUT` events call `pool.evictBadResources()` when they occur.
+Instructs the pool to destroy a resource instead of returning it to the pool. The act of destroying a resource is performed in the background so the destroy method returns instantly. If the destroy operation fails or times out the resource still takes up space within the pool, although it will never be re-issued. Where the pool has been configured with a maximum size, this could lead to resource contention impacting performance. In extreme cases it could even lead to all the pool becoming unusable. If you are concerned about this possibility then you can listen for the pool `ERR_X&#8209;POOL_RESOURCE_DESTROY_FAILED` and `ERR_X&#8209;POOL_OPERATION_TIMEDOUT` events call `pool.evictBadResources()` when they occur.
 
 ### evictBadResources() : void
 ```js
@@ -132,8 +132,8 @@ Shuts down the pool. After calling shutdown any inflight acquisition requests wi
 #### Errors
 | Code | Notes |
 |------|-------|
-| ERR_X-POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded |
-| ERR_X-POOL_SHUTDOWN           | The pool has been shutdown or is already in the process of shutting down |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded |
+| ERR_X&#8209;POOL_SHUTDOWN           | The pool has been shutdown or is already in the process of shutting down |
 
 ## Error Events
 Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, and if not explicitly handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
@@ -152,8 +152,8 @@ pool.on(XPoolError.code, (err) => {
 
 | Event | Notes |
 |-------|-------|
-| ERR_X-POOL_ERROR | Only emitted if one of the following events is not explicitly handled |
-| ERR_X-POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
-| ERR_X-POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
-| ERR_X-POOL_RESOURCE_DESTROY_FAILED | The factory yielded an error while destroying a resource |
-| ERR_X-POOL_OPERATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
+| ERR_X&#8209;POOL_ERROR | Only emitted if one of the following events is not explicitly handled |
+| ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
+| ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
+| ERR_X&#8209;POOL_RESOURCE_DESTROY_FAILED | The factory yielded an error while destroying a resource |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
