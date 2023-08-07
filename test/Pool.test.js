@@ -345,7 +345,7 @@ describe('Pool', () => {
       const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
       const resource1 = await pool.acquire();
-      setTimeout(() => pool.release(resource1), 100);
+      setTimeout(() => pool.release(resource1), 100).unref();
 
       const before = Date.now();
       const resource2 = await pool.acquire();
@@ -361,7 +361,7 @@ describe('Pool', () => {
       const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
       const resource1 = await pool.acquire();
-      setTimeout(() => pool.destroy(resource1), 100);
+      setTimeout(() => pool.destroy(resource1), 100).unref();
 
       const before = Date.now();
       const resource2 = await pool.acquire();
@@ -383,9 +383,9 @@ describe('Pool', () => {
       pool.release(resource);
 
       const { size, acquired, idle } = pool.stats();
-      eq(1, size);
-      eq(0, acquired);
-      eq(1, idle);
+      eq(size, 1);
+      eq(acquired, 0);
+      eq(idle, 1);
     });
 
     it('should tolerate releasing an unmanaged resource', () => {
@@ -395,8 +395,8 @@ describe('Pool', () => {
       pool.release('XX');
 
       const { size, idle } = pool.stats();
-      eq(0, size);
-      eq(0, idle);
+      eq(size, 0);
+      eq(idle, 0);
     });
   });
 
@@ -412,10 +412,10 @@ describe('Pool', () => {
 
       setTimeout(() => {
         const { size, acquired, idle } = pool.stats();
-        eq(0, size);
-        eq(0, acquired);
-        eq(0, idle);
-      }, 100);
+        eq(size, 0);
+        eq(acquired, 0);
+        eq(idle, 0);
+      }, 100).unref();
     });
 
     it('should destroy the given managed resource eventually', async (t, done) => {
@@ -501,11 +501,12 @@ describe('Pool', () => {
       const factory = new TestFactory();
       const pool = createPool({ factory });
 
-      const { size, acquired, idle, available } = pool.stats();
-      eq(0, size);
-      eq(0, acquired);
-      eq(0, idle);
-      eq(Infinity, available);
+      const { size, idle, acquired, bad, available } = pool.stats();
+      eq(size, 0);
+      eq(idle, 0);
+      eq(acquired, 0);
+      eq(bad, 0);
+      eq(available, Infinity);
     });
 
     it('should report stats for a pool with acquired resources', async () => {
@@ -515,11 +516,12 @@ describe('Pool', () => {
 
       await acquireResources(pool, 3);
 
-      const { size, acquired, idle, available } = pool.stats();
-      eq(3, size);
-      eq(3, acquired);
-      eq(0, idle);
-      eq(Infinity, available);
+      const { size, idle, acquired, bad, available } = pool.stats();
+      eq(size, 3);
+      eq(idle, 0);
+      eq(acquired, 3);
+      eq(bad, 0);
+      eq(available, Infinity);
     });
 
     it('should report stats for a pool with idle resources', async () => {
@@ -530,41 +532,72 @@ describe('Pool', () => {
       const [resource1, resource2, resource3] = await acquireResources(pool, 3);
       releaseResources(pool, [resource1, resource2, resource3]);
 
-      const { size, acquired, idle, available } = pool.stats();
-      eq(3, size);
-      eq(0, acquired);
-      eq(3, idle);
-      eq(Infinity, available);
+      const { size, idle, acquired, bad, available } = pool.stats();
+      eq(size, 3);
+      eq(idle, 3);
+      eq(acquired, 0);
+      eq(bad, 0);
+      eq(available, Infinity);
     });
 
-    it('should report stats for a pool with a mixture of idle and acquired resource', async () => {
-      const resources = ['R1', 'R2', 'R3'];
-      const factory = new TestFactory(resources);
-      const pool = createPool({ factory });
-
-      const [resource1, resource2] = await acquireResources(pool, 3);
-      releaseResources(pool, [resource1, resource2]);
-
-      const { size, acquired, idle, available } = pool.stats();
-      eq(3, size);
-      eq(1, acquired);
-      eq(2, idle);
-      eq(Infinity, available);
-    });
-
-    it('should report stats for a pool with a maximum size', async () => {
-      const resources = ['R1', 'R2', 'R3'];
+    it('should report stats for a pool with bad resources', async (t, done) => {
+      const resources = ['R1', { destroyError: 'Oh Noes!', value: 'R2' }, 'R3'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory, maxSize: 10 });
 
-      const [resource1, resource2] = await acquireResources(pool, 3);
-      releaseResources(pool, [resource1, resource2]);
+      pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        const { size, idle, acquired, bad, available } = pool.stats();
+        eq(size, 3);
+        eq(idle, 1);
+        eq(acquired, 1);
+        eq(bad, 1);
+        eq(available, 8);
+        done();
+      });
 
-      const { size, acquired, idle, available } = pool.stats();
-      eq(3, size);
-      eq(1, acquired);
-      eq(2, idle);
-      eq(9, available);
+      const [resource1, resource2] = await acquireResources(pool, 3);
+      pool.release(resource1);
+      pool.destroy(resource2);
+    });
+
+    it('should report stats for a pool with a mixture of idle, acquired and bad resources', async (t, done) => {
+      const resources = ['R1', { destroyError: 'Oh Noes!', value: 'R2' }, 'R3'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory });
+
+      pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        const { size, idle, acquired, bad, available } = pool.stats();
+        eq(size, 3);
+        eq(idle, 1);
+        eq(acquired, 1);
+        eq(bad, 1);
+        eq(available, Infinity);
+        done();
+      });
+
+      const [resource1, resource2] = await acquireResources(pool, 3);
+      pool.release(resource1);
+      pool.destroy(resource2);
+    });
+
+    it('should report stats for a pool with a mixture of idle, acquired and bad resources and a maximum pool size', async (t, done) => {
+      const resources = ['R1', { destroyError: 'Oh Noes!', value: 'R2' }, 'R3'];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, maxSize: 10 });
+
+      pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        const { size, idle, acquired, bad, available } = pool.stats();
+        eq(size, 3);
+        eq(idle, 1);
+        eq(acquired, 1);
+        eq(bad, 1);
+        eq(available, 8);
+        done();
+      });
+
+      const [resource1, resource2] = await acquireResources(pool, 3);
+      pool.release(resource1);
+      pool.destroy(resource2);
     });
   });
 });
