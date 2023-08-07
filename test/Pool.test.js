@@ -402,7 +402,7 @@ describe('Pool', () => {
 
   describe('destroy', () => {
 
-    it('should eventually remove the given managed resource from the pool', async () => {
+    it('should remove the given managed resource from the pool eventually', async () => {
       const resources = ['R1'];
       const factory = new TestFactory(resources);
       const pool = createPool({ factory });
@@ -491,6 +491,32 @@ describe('Pool', () => {
 
       const resource = await pool.acquire();
       pool.destroy(resource);
+    });
+
+  });
+
+  describe('evictBadResources', () => {
+
+    it('should evict bad resources', async (t, done) => {
+      const resources = [{ destroyDelay: 200, value: 'R1' }, { destroyError: 'Oh Noes!', value: 'R2' }];
+      const factory = new TestFactory(resources);
+      const pool = createPool({ factory, destroyTimeout: 100 });
+
+      pool.once('ERR_X-POOL_OPERATION_TIMEDOUT', () => {
+
+        const stats1 = pool.stats();
+        eq(stats1.bad, 2);
+
+        pool.evictBadResources();
+
+        const stats2 = pool.stats();
+        eq(stats2.bad, 0);
+        done();
+      });
+
+      const [resource1, resource2] = await acquireResources(pool, 2);
+      pool.destroy(resource1);
+      pool.destroy(resource2);
     });
 
   });
