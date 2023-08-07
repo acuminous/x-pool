@@ -25,7 +25,7 @@ try {
 
 | Name | Type | Required | Default | Notes |
 |------|------|----------|---------|-------|
-| factory | ResourceFactory | Y |  | an instance of a resource factory |
+| factory | ResourceFactory | Y |  | An instance of a resource factory |
 | minSize | integer | N | 0 | Specifies the minimum pool size. |
 | maxSize | integer | N | Infinity  | Specifies the maximum pool size. |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
