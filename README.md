@@ -62,7 +62,7 @@ module.exports = class DatabaseFactory {
     this._options = options;
   }
 
-  async create() {
+  async create(pool) {
     const client = await db.connect(this._options);
     client.on('error', () => pool.destroy(client));
     return client;
