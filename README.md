@@ -23,22 +23,22 @@ try {
 
 ## Configuration Options
 
-| Name                 | Type            | Required | Default | Notes |
-|----------------------|-----------------|----------|---------|-------|
-| factory              | Factory         | Y        |         | An instance of a resource factory |
-| minSize              | integer         | N        | 0       | Specifies the minimum pool size. |
-| maxSize              | integer         | N        |         | Infinity  | Specifies the maximum pool size. |
-| initialiseTimeout    | integer         | N        |         | The number of milliseconds the pool will wait to initialise. |
-| acquireTimeout       | integer         | Y        |         | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
-| acquireRetryInterval | integer         | N        | 100     | The number of milliseconds the pool will wait before retrying resource acquition after a failure. |
-| destroyTimeout       | integer         | Y        |         | The number of milliseconds the pool will wait for the factory to validate a resource. |
-| shutdownTimeout      | integer         | N        |         | The number of milliseconds the pool will wait to shutdown. If unset the pool will wait undefinitely. |
-| revalidateInterval   | integer         | N        |         | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
+| Name                 | Type    | Required | Default  | Notes                                                                                                              |
+| -------------------- | ------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| factory              | Factory | Y        |          | An instance of a resource factory                                                                                  |
+| minSize              | integer | N        | 0        | Specifies the minimum pool size.                                                                                   |
+| maxSize              | integer | N        | Infinity | Specifies the maximum pool size.                                                                                   |
+| initialiseTimeout    | integer | N        |          | The number of milliseconds the pool will wait to initialise.                                                       |
+| acquireTimeout       | integer | Y        |          | The number of milliesconds the pool will wait to acquire a resource before rejecting.                              |
+| acquireRetryInterval | integer | N        | 100      | The number of milliseconds the pool will wait before retrying resource acquition after a failure.                  |
+| destroyTimeout       | integer | Y        |          | The number of milliseconds the pool will wait for the factory to validate a resource.                              |
+| shutdownTimeout      | integer | N        |          | The number of milliseconds the pool will wait to shutdown. If unset the pool will wait undefinitely.               |
+| revalidateInterval   | integer | N        |          | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
 
 #### Errors
 
-| Code | Notes |
-|------|-------|
+| Code                                 | Notes                                                       |
+| ------------------------------------ | ----------------------------------------------------------- |
 | ERR_X&#8209;POOL_CONFIGURATION_ERROR | The pool was passed an invalid set of configuration options |
 
 ## Custom Factories
@@ -96,16 +96,16 @@ There are equally strong arguments to re-issue the most recently used reosurce a
 
 #### Errors
 
-| Code | Notes |
-|------|-------|
+| Code                                | Notes                            |
+| ----------------------------------- | -------------------------------- |
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded |
-| ERR_X&#8209;POOL_SHUTDOWN           | The pool has been shutdown |
+| ERR_X&#8209;POOL_SHUTDOWN           | The pool has been shutdown       |
 
 ### release(resource: T) : void
 ```js
 pool.release(resource);
 ```
-Returns a resource to the pool. If the resource is not managed it will be discarded without error. 
+Returns a resource to the pool. If the resource is not managed it will be discarded without error.
 
 ### destroy() : void
 ```js
@@ -125,14 +125,13 @@ const { size, acquired, idle, spare, available, bad } = pool.stats();
 ```
 Returns the following of statistics about the pool
 
-| Name | Type | Notes |
-|------|------|-------|
-| size | integer | The current pool size (idle + acquired + bad) |
-| idle | integer | The number of resources currently idling in the pool |
-| acquired | integer | The number of resources currently in use |
-| bad | integer | The number of resourses which failed to be destroyed |
+| Name      | Type    | Notes                                                                      |
+| --------- | ------- | -------------------------------------------------------------------------- |
+| size      | integer | The current pool size (idle + acquired + bad)                              |
+| idle      | integer | The number of resources currently idling in the pool                       |
+| acquired  | integer | The number of resources currently in use                                   |
+| bad       | integer | The number of resourses which failed to be destroyed                       |
 | available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
-
 
 ### shutdown() : Promise<void>
 ```js
@@ -142,9 +141,9 @@ Shuts down the pool. After calling shutdown any inflight acquisition requests wi
 
 #### Errors
 
-| Code | Notes |
-|------|-------|
-| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded |
+| Code                                | Notes                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded                                        |
 | ERR_X&#8209;POOL_SHUTDOWN           | The pool has been shutdown or is already in the process of shutting down |
 
 ## Error Events
@@ -162,10 +161,10 @@ pool.on(XPoolError.code, (err) => {
 });
 ```
 
-| Event | Notes |
-|-------|-------|
-| ERR_X&#8209;POOL_ERROR | Only emitted if one of the following events is not explicitly handled |
-| ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
-| ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
-| ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED | The factory yielded an error while destroying a resource |
-| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
+| Event                                        | Notes                                                                 |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| ERR_X&#8209;POOL_ERROR                       | Only emitted if one of the following events is not explicitly handled |
+| ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED    | The factory yielded an error while creating a resource                |
+| ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED  | The factory yielded an error while validating a resource              |
+| ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED | The factory yielded an error while destroying a resource              |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT          | The createResource timeout was exceeded while creating a resource     |
