@@ -46,6 +46,57 @@ describe('Pool', () => {
       });
     });
 
+    describe('maxSize', () => {
+
+      it('should require maxSize to be a number', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: false }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The maxSize option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+
+      it('should require maxSize to be at least 1', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: 0 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The maxSize option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+    });
+
+    describe('minSize', () => {
+
+      it('should require minSize to be a number', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: false }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The minSize option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+
+      it('should require minSize to be at least 0', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: -1 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The minSize option must be at least 0. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+
+      it('should require minSize to be less than or equal to maxSize', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: 10, maxSize: 9 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The minSize option must be less than or equal to maxSize. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+    });
+
     describe('acquireTimeout', () => {
 
       it('should require an acquireTimeout', () => {
@@ -99,7 +150,7 @@ describe('Pool', () => {
 
     describe('destroyTimeout', () => {
 
-      it('should require an destroyTimeout', () => {
+      it('should require a destroyTimeout', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000 }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
@@ -127,56 +178,27 @@ describe('Pool', () => {
       });
     });
 
-    describe('maxSize', () => {
+    describe('shutdownTimeout', () => {
 
-      it('should require maxSize to be a number', () => {
+      it('should require shutdownTimeout to be a number', () => {
         const factory = new TestFactory();
-        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: false }), (err) => {
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, shutdownTimeout: false }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The maxSize option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
+          eq(err.message, 'The shutdownTimeout option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
       });
 
-      it('should require maxSize to be at least 1', () => {
+      it('should require shutdownTimeout to be at least 1ms', () => {
         const factory = new TestFactory();
-        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: 0 }), (err) => {
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, shutdownTimeout: 0 }), (err) => {
           eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The maxSize option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
-          return true;
-        });
-      });
-    });
-
-    describe('minSize', () => {
-
-      it('should require minSize to be a number', () => {
-        const factory = new TestFactory();
-        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The minSize option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
-          return true;
-        });
-      });
-
-      it('should require minSize to be at least 0', () => {
-        const factory = new TestFactory();
-        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: -1 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The minSize option must be at least 0. Please read the documentation at https://acuminous.github.io/x-pool');
-          return true;
-        });
-      });
-
-      it('should require minSize to be less than or equal to maxSize', () => {
-        const factory = new TestFactory();
-        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: 10, maxSize: 9 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
-          eq(err.message, 'The minSize option must be less than or equal to maxSize. Please read the documentation at https://acuminous.github.io/x-pool');
+          eq(err.message, 'The shutdownTimeout option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
       });
     });
+
   });
 
   describe('API', () => {

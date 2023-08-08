@@ -1,10 +1,12 @@
 export class Pool<T> {
   constructor(options: PoolOptions<T>);
+  initialise() : Promise<void>;
   acquire() : Promise<T>;
   release(resource: T): void;
   destroy(resource: T): void;
   evictBadResources(): void;
   stats(): PoolStats;
+  shutdown() : Promise<void>;
 }
 
 export type PoolOptions<T> = {
