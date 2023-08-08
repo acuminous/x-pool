@@ -163,5 +163,5 @@ pool.on(XPoolError.code, (err) => {
 | ERR_X&#8209;POOL_ERROR | Only emitted if one of the following events is not explicitly handled |
 | ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED | The factory yielded an error while creating a resource |
 | ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED | The factory yielded an error while validating a resource |
-| ERR_X&#8209;POOL_RESOURCE_DESTROY_FAILED | The factory yielded an error while destroying a resource |
+| ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED | The factory yielded an error while destroying a resource |
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The createResource timeout was exceeded while creating a resource |
