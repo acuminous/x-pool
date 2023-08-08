@@ -1,14 +1,14 @@
 export class Pool<T> {
-  constructor(options: PoolOptions);
+  constructor(options: PoolOptions<T>);
   acquire() : Promise<T>;
-  release(resource: <T>): void;
-  destroy(resource: <T>): void;
+  release(resource: T): void;
+  destroy(resource: T): void;
   evictBadResources(): void;
   stats(): PoolStats;
-};
+}
 
-export type PoolOptions {
-  factory: Factory;
+export type PoolOptions<T> = {
+  factory: Factory<T>;
   minSize?: number;
   maxSize?: number;
   acquireTimeout: number;
@@ -16,18 +16,18 @@ export type PoolOptions {
   destroyTimeout: number;
   initialiseTimeout?: number;
   shutdownTimeout?: number;
-};
+}
 
-export type Factory<T> {
+export interface Factory<T> {
   create(pool: Pool<T>): Promise<T>;
   validate(resource: T): Promise<void>;
   destroy(resource: T): Promise<void>;
-};
+}
 
-export type PoolStats {
+export type PoolStats = {
   size: number;
   idle: number;
   acquired: number;
   bad: number;
   available: number;
-};
+}
