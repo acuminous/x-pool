@@ -180,6 +180,33 @@ describe('Pool', () => {
   });
 
   describe('API', () => {
+
+    describe('initialise', () => {
+
+      it('should block until the pool reaches the minimum size', async () => {
+        const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 5 });
+
+        await pool.initialise();
+
+        const { size, idle } = pool.stats();
+        eq(size, 5);
+        eq(idle, 5);
+      });
+
+      it('should reject when the initialiseTimeout is exceeded', async () => {
+        const resources = [];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 5, initialiseTimeout: 200 });
+
+        await rejects(() => pool.initialise(), (err) => {
+          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          return true;
+        });
+      });
+    });
+
     describe('acquire', () => {
 
       it('should create a new resource when the pool is empty', async () => {
@@ -660,8 +687,8 @@ describe('Pool', () => {
   });
 });
 
-function createPool({ factory, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000, maxSize, revalidateInterval }) {
-  return new Pool({ factory, acquireTimeout, acquireRetryInterval, destroyTimeout, maxSize, revalidateInterval });
+function createPool({ factory, minSize, maxSize, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
+  return new Pool({ factory, minSize, maxSize, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
 }
 
 function acquireResources(pool, count) {

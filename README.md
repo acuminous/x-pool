@@ -23,17 +23,17 @@ try {
 
 ## Configuration Options
 
-| Name | Type | Required | Default | Notes |
-|------|------|----------|---------|-------|
-| factory | ResourceFactory | Y |  | An instance of a resource factory |
-| minSize | integer | N | 0 | Specifies the minimum pool size. |
-| maxSize | integer | N | Infinity  | Specifies the maximum pool size. |
-| acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
-| acquireRetryInterval | integer | N | 100 | The number of milliseconds the pool will wait before retrying resource acquition after a failure. |
-| destroyTimeout | integer | Y | | The number of milliseconds the pool will wait for the factory to validate a resource. |
-| initialiseTimeout | integer | N | | The number of milliseconds the pool will wait to initialise. If unset the pool will wait indefinitely.  |
-| shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. If unset the pool will wait undefinitely. |
-| revalidateInterval | integer | N | | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
+| Name                 | Type            | Required | Default | Notes |
+|----------------------|-----------------|----------|---------|-------|
+| factory              | ResourceFactory | Y        |         | An instance of a resource factory |
+| minSize              | integer         | N        | 0       | Specifies the minimum pool size. |
+| maxSize              | integer         | N        |         | Infinity  | Specifies the maximum pool size. |
+| initialiseTimeout    | integer         | N        |         | The number of milliseconds the pool will wait to initialise. |
+| acquireTimeout       | integer         | Y        |         | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
+| acquireRetryInterval | integer         | N        | 100     | The number of milliseconds the pool will wait before retrying resource acquition after a failure. |
+| destroyTimeout       | integer         | Y        |         | The number of milliseconds the pool will wait for the factory to validate a resource. |
+| shutdownTimeout      | integer         | N        |         | The number of milliseconds the pool will wait to shutdown. If unset the pool will wait undefinitely. |
+| revalidateInterval   | integer         | N        |         | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it. |
 
 #### Errors
 
@@ -80,7 +80,7 @@ module.exports = class DatabaseFactory {
 ```js
 const resource = await pool.initialise();
 ```
-Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded. You do not need to wait for the pool to initialise, however it is recommented in order to ensure your factory is correctly configured and has access to the required systems.
+Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded. You do not need to wait for the pool to initialise, however it is recommented you do so as to ensure your factory is correctly configured and has access to the required systems.
 
 ### acquire() : Promise<T>
 ```js

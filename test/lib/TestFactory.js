@@ -8,6 +8,7 @@ module.exports = class TestFactory {
   }
 
   async create() {
+    if (this._resourceDefinitions.length === 0) throw new Error('Test Factory has exhausted all resources');
     const rd = this._resourceDefinitions[this._index++];
     if (rd.createDelay) await scheduler.wait(rd.createDelay);
     if (rd.createError) throw new Error(rd.createError);
