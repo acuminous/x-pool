@@ -44,7 +44,7 @@ try {
 ## Custom Factories
 A factory is a user implemented object which must expose the following three methods:
 
-### create(pool) : Promise<T>
+### create(pool: Pool) : Promise<T>
 Must yield a new resource or reject if the resource could not be created.
 
 ### validate(resource: T) : Promise<void>
