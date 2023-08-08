@@ -55,13 +55,17 @@ Must destroy the supplied resource or reject if the resource could not be destro
 
 ### Example
 ```js
+const db = require('db');
+
 module.exports = class DatabaseFactory {
   constructor(options) {
     this._options = options;
   }
 
   async create() {
-    return db.connect(this._options);
+    const client = await db.connect(this._options);
+    client.on('error', () => pool.destroy(client));
+    return client;
   }
 
   async validate(client) {
