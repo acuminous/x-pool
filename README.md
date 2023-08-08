@@ -25,7 +25,7 @@ try {
 
 | Name                 | Type            | Required | Default | Notes |
 |----------------------|-----------------|----------|---------|-------|
-| factory              | ResourceFactory | Y        |         | An instance of a resource factory |
+| factory              | Factory         | Y        |         | An instance of a resource factory |
 | minSize              | integer         | N        | 0       | Specifies the minimum pool size. |
 | maxSize              | integer         | N        |         | Infinity  | Specifies the maximum pool size. |
 | initialiseTimeout    | integer         | N        |         | The number of milliseconds the pool will wait to initialise. |
