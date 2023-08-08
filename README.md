@@ -29,7 +29,7 @@ try {
 | minSize | integer | N | 0 | Specifies the minimum pool size. |
 | maxSize | integer | N | Infinity  | Specifies the maximum pool size. |
 | acquireTimeout | integer | Y |  | The number of milliesconds the pool will wait to acquire a resource before rejecting. |
-| acquireRetryInterval | integer | N | 100 | The number of milliseconds the pool will wait before retrying resource acquision after a failure. |
+| acquireRetryInterval | integer | N | 100 | The number of milliseconds the pool will wait before retrying resource acquition after a failure. |
 | destroyTimeout | integer | Y | | The number of milliseconds the pool will wait for the factory to validate a resource. |
 | initialiseTimeout | integer | N | | The number of milliseconds the pool will wait to initialise. |
 | shutdownTimeout | integer | N | | The number of milliseconds the pool will wait to shutdown. |
