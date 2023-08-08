@@ -18,10 +18,16 @@ export type PoolOptions {
   shutdownTimeout?: number;
 };
 
+export type Factory<T> {
+  create(pool: Pool<T>): Promise<T>;
+  validate(resource: T): Promise<void>;
+  destroy(resource: T): Promise<void>;
+};
+
 export type PoolStats {
   size: number;
   idle: number;
   acquired: number;
   bad: number;
   available: number;
-}
+};
