@@ -811,9 +811,28 @@ describe('Pool', () => {
         eq(acquired2, 0);
       });
 
-      it('should wait for pending acquisitions to be honoured');
+      it('should wait for pending acquisitions to be honoured', async (t, done) => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, maxSize: 1 });
 
-      it('should reject when the shutdownTimeout is exceeded');
+        const resource1 = await pool.acquire(); // acquire the only resource
+        setTimeout(async () => {
+          const before = Date.now();
+          await pool.shutdown();
+          const after = Date.now();
+          ok(after - before >= 200 + 200 - 100, 'Shutdown did not wait for pending acquitions');
+          done();
+        }, 100);
+
+        setTimeout(() => pool.release(resource1), 200);
+        await pool.acquire(); // create a pending acquisition
+        setTimeout(() => pool.release(resource1), 200);
+      });
+
+      it('should reject when the shutdownTimeout is exceeded', () => {
+
+      });
 
       it('should tolerate resource destruction errors');
 
