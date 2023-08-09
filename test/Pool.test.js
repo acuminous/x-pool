@@ -198,7 +198,6 @@ describe('Pool', () => {
         });
       });
     });
-
   });
 
   describe('API', () => {
@@ -227,6 +226,8 @@ describe('Pool', () => {
           return true;
         });
       });
+
+      it('should reject repeat initialise calls');
     });
 
     describe('acquire', () => {
@@ -705,6 +706,120 @@ describe('Pool', () => {
         pool.release(resource1);
         pool.destroy(resource2);
       });
+    });
+
+    describe('shutdown', () => {
+
+      it('should reject repeat shutdown requests', async () => {
+        const factory = new TestFactory();
+        const pool = createPool({ factory });
+
+        await pool.shutdown();
+
+        await rejects(() => pool.shutdown(), (err) => {
+          eq(err.code, 'ERR_X-POOL_OPERATION_FAILED');
+          eq(err.message, 'The pool has been shutdown');
+          return true;
+        });
+      });
+
+      it('should reject acquition requests', async () => {
+        const factory = new TestFactory();
+        const pool = createPool({ factory });
+
+        await pool.shutdown();
+
+        await rejects(() => pool.acquire(), (err) => {
+          eq(err.code, 'ERR_X-POOL_OPERATION_FAILED');
+          eq(err.message, 'The pool has been shutdown');
+          return true;
+        });
+      });
+
+      it('should reject initialisation requests', async () => {
+        const factory = new TestFactory();
+        const pool = createPool({ factory });
+
+        await pool.shutdown();
+
+        await rejects(() => pool.initialise(), (err) => {
+          eq(err.code, 'ERR_X-POOL_OPERATION_FAILED');
+          eq(err.message, 'The pool has been shutdown');
+          return true;
+        });
+      });
+
+      it('should evict bad resources', async (t, done) => {
+        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 1 });
+
+        const resource = await pool.acquire();
+
+        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', async () => {
+          const { size: size1, bad: bad1 } = pool.stats();
+          eq(size1, 1);
+          eq(bad1, 1);
+
+          await pool.shutdown();
+
+          const { size: size2, bad: bad2 } = pool.stats();
+          eq(size2, 0);
+          eq(bad2, 0);
+
+          done();
+        });
+
+        pool.destroy(resource);
+      });
+
+      it('should wait for idle resources to be destroyed', async () => {
+        const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 5 });
+
+        await pool.initialise();
+
+        const { size: size1, idle: idle1 } = pool.stats();
+        eq(size1, 5);
+        eq(idle1, 5);
+
+        await pool.shutdown();
+
+        const { size: size2, idle: idle2 } = pool.stats();
+        eq(size2, 0);
+        eq(idle2, 0);
+      });
+
+      it('should wait for acquired resources to be released and destroyed', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        const resource = await pool.acquire();
+
+        const { size: size1, acquired: acquired1 } = pool.stats();
+        eq(size1, 1);
+        eq(acquired1, 1);
+
+        setTimeout(() => pool.release(resource), 100);
+
+        await pool.shutdown();
+
+        const { size: size2, acquired: acquired2 } = pool.stats();
+        eq(size2, 0);
+        eq(acquired2, 0);
+      });
+
+      it('should wait for pending acquisitions to be honoured');
+
+      it('should reject when the shutdownTimeout is exceeded');
+
+      it('should tolerate resource destruction errors');
+
+      it('should report resource destruction errors via a specific event');
+
+      it('should fallback to reporting resource destruction errors via a general event');
     });
   });
 });
