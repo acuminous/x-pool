@@ -121,7 +121,7 @@ Evicts resources that failed to be destroyed.
 
 ### stats() : PoolStats
 ```js
-const { size, acquired, idle, spare, available, bad } = pool.stats();
+const { size, idle, pending, acquired, available, bad } = pool.stats();
 ```
 Returns the following of statistics about the pool
 
@@ -129,6 +129,8 @@ Returns the following of statistics about the pool
 | --------- | ------- | -------------------------------------------------------------------------- |
 | size      | integer | The current pool size (idle + acquired + bad)                              |
 | idle      | integer | The number of resources currently idling in the pool                       |
+| queued    | integer | The number of queued acquisition requests                                  |
+| pending   | integer | The number of resources in the process of being acquired                   |
 | acquired  | integer | The number of resources currently in use                                   |
 | bad       | integer | The number of resourses which failed to be destroyed                       |
 | available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
