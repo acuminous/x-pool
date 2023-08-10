@@ -149,7 +149,7 @@ Shuts down the pool. After calling shutdown any inflight acquisition requests wi
 | ERR_X&#8209;POOL_SHUTDOWN_FAILED    | The pool has been shutdown or is already in the process of shutting down |
 
 ## Error Events
-Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, and if not explicitly handled, re-emitted as a generic event so that you can have a catch all handler if you chose.
+Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, and if not explicitly handled, re-emitted as a generic event so that you can have a catch all handler if you chose. For example:
 
 ```js
 const { Errors } = require('x-pool');
@@ -162,6 +162,7 @@ pool.on(XPoolError.code, (err) => {
   // Handle all other error events in a general way
 });
 ```
+The potential events are as follows:
 
 | Event                                        | Notes                                                                 |
 | -------------------------------------------- | --------------------------------------------------------------------- |
