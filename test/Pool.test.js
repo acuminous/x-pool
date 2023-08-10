@@ -621,9 +621,11 @@ describe('Pool', () => {
         const factory = new TestFactory();
         const pool = createPool({ factory });
 
-        const { size, idle, acquired, bad, available } = pool.stats();
+        const { size, idle, queued, pending, acquired, bad, available } = pool.stats();
         eq(size, 0);
         eq(idle, 0);
+        eq(queued, 0);
+        eq(pending, 0);
         eq(acquired, 0);
         eq(bad, 0);
         eq(available, Infinity);
@@ -658,6 +660,22 @@ describe('Pool', () => {
         eq(acquired, 0);
         eq(bad, 0);
         eq(available, Infinity);
+      });
+
+      it('should report stats for a pool with queued acquisition requests', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, maxSize: 1 });
+
+        await pool.acquire();
+        pool.acquire();
+        pool.acquire();
+
+        const { size, idle, queued, acquired } = pool.stats();
+        eq(size, 1);
+        eq(idle, 0);
+        eq(queued, 2);
+        eq(acquired, 1);
       });
 
       it('should report stats for a pool with bad resources', async (t, done) => {
