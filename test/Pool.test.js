@@ -227,7 +227,20 @@ describe('Pool', () => {
         });
       });
 
-      it('should reject repeat initialise calls');
+      it('should tolerate repeat intialisation calls', async () => {
+        const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 2 });
+
+        await pool.initialise();
+        await pool.acquire();
+        await pool.initialise();
+
+        const { size, idle, acquired } = pool.stats();
+        eq(size, 2);
+        eq(idle, 1);
+        eq(acquired, 1);
+      });
     });
 
     describe('acquire', () => {
@@ -830,15 +843,60 @@ describe('Pool', () => {
         setTimeout(() => pool.release(resource1), 200);
       });
 
-      it('should reject when the shutdownTimeout is exceeded', () => {
+      it('should reject when the shutdownTimeout is exceeded', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, destroyTimeout: 200 });
 
+        await pool.acquire();
+
+        await rejects(() => pool.shutdown(), (err) => {
+          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          return true;
+        });
       });
 
-      it('should tolerate resource destruction errors');
+      it('should tolerate resource destruction errors', async () => {
+        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 1, destroyTimeout: 1000 });
 
-      it('should report resource destruction errors via a specific event');
+        await pool.initialise();
 
-      it('should fallback to reporting resource destruction errors via a general event');
+        await pool.shutdown();
+      });
+
+      it('should report resource destruction errors via a specific event', async (t, done) => {
+        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 1 });
+
+        await pool.initialise();
+
+        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', (err) => {
+          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
+          eq(err.cause.message, 'Oh Noes!');
+          done();
+        });
+
+        await pool.shutdown();
+      });
+
+      it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
+        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 1 });
+
+        await pool.initialise();
+
+        pool.once('ERR_X-POOL_ERROR', (err) => {
+          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
+          eq(err.cause.message, 'Oh Noes!');
+          done();
+        });
+
+        await pool.shutdown();
+      });
     });
   });
 });
