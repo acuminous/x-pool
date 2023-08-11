@@ -51,7 +51,7 @@ Must resolve with a new resource or reject if the resource could not be created.
 Must resolve if the resource is confirmed to be working or reject if the resource is found to be broken. If you don't want to validate resources then implement an empty function.
 
 ### destroy(resource: T) : Promise<void>
-Must destroy the supplied resource or reject if the resource could not be destroyed.
+Must resolve after destroying the supplied resource or reject if the resource could not be destroyed.
 
 ### Example
 ```js
