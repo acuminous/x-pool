@@ -63,9 +63,7 @@ module.exports = class DatabaseFactory {
   }
 
   async create(pool) {
-    const client = await db.connect(this._options);
-    client.on('error', () => pool.destroy(client));
-    return client;
+    return await db.connect(this._options);
   }
 
   async validate(client) {
@@ -73,7 +71,7 @@ module.exports = class DatabaseFactory {
   }
 
   async destroy(client) {
-    await client.close();
+    return client.close();
   }
 }
 ```
