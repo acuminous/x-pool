@@ -141,10 +141,10 @@ Shuts down the pool. After calling shutdown any inflight acquisition requests wi
 
 #### Errors
 
-| Code                                | Notes                                                                    |
-| ----------------------------------- | ------------------------------------------------------------------------ |
-| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded                                        |
-| ERR_X&#8209;POOL_SHUTDOWN_FAILED    | The pool has been shutdown or is already in the process of shutting down |
+| Code                                | Notes                                                                                          |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The shutdown timeout was exceeded                                                              |
+| ERR_X&#8209;POOL_OPERATION_FAILED   | The pool could not be shutdown, possibly because it is already in the process of shutting down |
 
 ## Error Events
 Resources can break while idle. Resource creation / validation can fail after the request has timedout. Resource destruction always takes place in the background, and could also error. For this reason the Pool emits events so your application can keep tabs on what's going on under the hood. All error events are emitted first as a specific event, and if not explicitly handled, re-emitted as a generic event so that you can have a catch all handler if you chose. For example:
