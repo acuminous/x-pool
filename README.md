@@ -63,7 +63,7 @@ module.exports = class DatabaseFactory {
   }
 
   async create(pool) {
-    return await db.connect(this._options);
+    return db.connect(this._options);
   }
 
   async validate(client) {
