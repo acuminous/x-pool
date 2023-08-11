@@ -45,7 +45,7 @@ try {
 A factory is a user implemented object which must expose the following three methods:
 
 ### create(pool: Pool) : Promise<T>
-Must yield a new resource or reject if the resource could not be created.
+Must resolve with a new resource or reject if the resource could not be created.
 
 ### validate(resource: T) : Promise<void>
 Must resolve if the resource is confirmed to be working or reject if the resource is found to be broken. If you don't want to validate resources then implement an empty function.
