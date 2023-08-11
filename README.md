@@ -48,7 +48,7 @@ A factory is a user implemented object which must expose the following three met
 Must yield a new resource or reject if the resource could not be created.
 
 ### validate(resource: T) : Promise<void>
-Must yield if the resource is confirmed to be working or reject if the resource is found to be broken.
+Must resolve if the resource is confirmed to be working or reject if the resource is found to be broken. If you don't want to validate resources then implement an empty function.
 
 ### destroy(resource: T) : Promise<void>
 Must destroy the supplied resource or reject if the resource could not be destroyed.
