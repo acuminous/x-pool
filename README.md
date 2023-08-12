@@ -4,7 +4,7 @@
 [![Code Climate](https://codeclimate.com/github/acuminous/x-pool/badges/gpa.svg)](https://codeclimate.com/github/acuminous/x-pool)
 [![Test Coverage](https://codeclimate.com/github/acuminous/x-pool/badges/coverage.svg)](https://codeclimate.com/github/acuminous/x-pool/coverage)
 
-X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/node-pool](https://github.com/coopernurse/node-pool) which sadly has some [long standing and serious bugs](https://github.com/coopernurse/node-pool/issues/197). It offers a slightly different interface than generic-pool, so please refer to the [migrating-from-generic-pool] section if you are planning to migrate.
+X-Pool is a generic resource pool library for Node.js inspired by [generic-pool/node-pool](https://github.com/coopernurse/node-pool) which sadly has some [long standing and serious bugs](https://github.com/coopernurse/node-pool/issues/197). It offers a slightly different interface than generic-pool, so please refer to the [#migrating-from-generic-pool] section if you are planning to migrate.
 
 ## TL;DR
 
@@ -249,10 +249,10 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### Events
 
-| Generic Pool            | X-Pool                                 | Notes                                       |
-| ----------------------- | -------------------------------------- | ------------------------------------------- |
-| factoryCreateError      | ERR_X-POOL_RESOURCE_CREATION_FAILED    | Use `Errors.ResourceCreationFailed.code`    |
-| factoryDestructionError | ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED | Use `Errors.ResourceDestructionFailed.code` |
+| Generic Pool            | X-Pool                                       | Notes                                       |
+| ----------------------- | -------------------------------------------- | ------------------------------------------- |
+| factoryCreateError      | ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED    | Use `Errors.ResourceCreationFailed.code`    |
+| factoryDestructionError | ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED | Use `Errors.ResourceDestructionFailed.code` |
 
 ### Pool Stats
 
