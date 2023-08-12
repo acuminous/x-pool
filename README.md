@@ -48,15 +48,15 @@ try {
 
 A factory is a user implemented object which must expose the following three methods:
 
-### create(pool: Pool) : Promise<T>
+### create(pool: Pool) : Promise&lt;T&gt;
 
 Must resolve with a new resource or reject if the resource could not be created.
 
-### validate(resource: T) : Promise<void>
+### validate(resource: T) : Promise&lt;void&gt;
 
 Must resolve if the resource is confirmed to be working or reject if the resource is found to be broken. If you don't want to validate resources then implement an empty function.
 
-### destroy(resource: T) : Promise<void>
+### destroy(resource: T) : Promise&lt;void&gt;
 
 Must resolve after destroying the supplied resource or reject if the resource could not be destroyed.
 
@@ -86,7 +86,7 @@ module.exports = class DatabaseFactory {
 
 ## Pool API
 
-### initialise() : Promise<void>
+### initialise() : Promise&lt;void&gt;
 
 ```js
 const resource = await pool.initialise();
@@ -94,7 +94,7 @@ const resource = await pool.initialise();
 
 Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded. You do not need to wait for the pool to initialise, however it is recommented you do so as to ensure your factory is correctly configured and has access to the required systems.
 
-### acquire() : Promise<T>
+### acquire() : Promise&lt;T&gt;
 
 ```js
 const resource = await pool.acquire();
@@ -153,7 +153,7 @@ Returns the following of statistics about the pool
 | bad       | integer | The number of resourses which failed to be destroyed                       |
 | available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
 
-### shutdown() : Promise<void>
+### shutdown() : Promise&lt;void&gt;
 
 ```js
 await pool.shutdown();
@@ -191,10 +191,10 @@ Resources can break while idle. Resource creation / validation can fail after th
 const { Errors } = require("x-pool");
 const { ResourceCreationFailed, XPoolError } = Errors;
 
-pool.on(ResourceCreationFailed.code, (err) => {
+pool.on(ResourceCreationFailed.code, (err) =&gt; {
   // Handle the resource creation failed error event in a specific way
 });
-pool.on(XPoolError.code, (err) => {
+pool.on(XPoolError.code, (err) =&gt; {
   // Handle all other error events in a general way
 });
 ```
@@ -234,18 +234,18 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### API
 
-| Generic Pool                             | X-Pool                       | Notes                                                                                                                                                                                                                      |
-| ---------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| acquire(priority? : number) : Promise<T> | acquire() : Promise<T>       | X-Pool does not currently support priorities                                                                                                                                                                               |
-| isBorrowedResource() : boolean           | Not Supported                | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
-| isBorrowedResource() : boolean           | Not Supported                | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
-| release(resource : T) : Promise<void>    | release(resource : T) : void | Releasing resources is a synchronous operation so there is no need to return a promise                                                                                                                                     |
-| destroy(resource : T) : Promise<void>    | destroy(resource : T) : void | Resources are destroyed in the background so there is no need for this method to return a promise                                                                                                                          |
-| start() : <void>                         | initialise() : Promise<void> | Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to. |
-| ready() : <void>                         | Not Supported                | Await the initialise method instead.                                                                                                                                                                                       |
-| use() : Promise<any>                     | Not Supported                | We will consider adding this feature if needed.                                                                                                                                                                            |
-| drain() : Promise<void>                  | shutdown() : Promise<void>   |                                                                                                                                                                                                                            |
-| clear() : Promise<void> Not Supported    | Not necessary with X-Pool    |
+| Generic Pool                                   | X-Pool                             | Notes                                                                                                                                                                                                                      |
+| ---------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| acquire(priority? : number) : Promise&lt;T&gt; | acquire() : Promise&lt;T&gt;       | X-Pool does not currently support priorities                                                                                                                                                                               |
+| isBorrowedResource() : boolean                 | Not Supported                      | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
+| isBorrowedResource() : boolean                 | Not Supported                      | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
+| release(resource : T) : Promise&lt;void&gt;    | release(resource : T) : void       | Releasing resources is a synchronous operation so there is no need to return a promise                                                                                                                                     |
+| destroy(resource : T) : Promise&lt;void&gt;    | destroy(resource : T) : void       | Resources are destroyed in the background so there is no need for this method to return a promise                                                                                                                          |
+| start() : <void&gt;                            | initialise() : Promise&lt;void&gt; | Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to. |
+| ready() : <void&gt;                            | Not Supported                      | Await the initialise method instead.                                                                                                                                                                                       |
+| use() : Promise&lt;any&gt;                     | Not Supported                      | We will consider adding this feature if needed.                                                                                                                                                                            |
+| drain() : Promise&lt;void&gt;                  | shutdown() : Promise&lt;void&gt;   |                                                                                                                                                                                                                            |
+| clear() : Promise&lt;void&gt; Not Supported    | Not necessary with X-Pool          |
 
 ### Events
 
