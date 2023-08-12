@@ -468,7 +468,7 @@ describe('Pool', () => {
 
     describe('release', () => {
 
-      it('should release the given managed resource', async () => {
+      it('should release the supplied resource', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
@@ -496,7 +496,7 @@ describe('Pool', () => {
 
     describe('destroy', () => {
 
-      it('should remove the given managed resource from the pool eventually', async () => {
+      it('should remove the supplied resource from the pool eventually', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
@@ -512,7 +512,7 @@ describe('Pool', () => {
         }, 100).unref();
       });
 
-      it('should destroy the given managed resource eventually', async (t, done) => {
+      it('should destroy the supplied resource eventually', async (t, done) => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
@@ -587,6 +587,56 @@ describe('Pool', () => {
         pool.destroy(resource);
       });
 
+      it('should quaranteen resources that failed to be destroyed due to error', async (t, done) => {
+        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+          const { size, acquired, bad } = pool.stats();
+          eq(size, 1);
+          eq(acquired, 0);
+          eq(bad, 1);
+          done();
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
+      });
+
+      it('should quaranteen resources that failed to be destroyed due to timeout', async (t, done) => {
+        const resources = [{ destroyDelay: 200, value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, destroyTimeout: 100 });
+
+        pool.once('ERR_X-POOL_OPERATION_TIMEDOUT', () => {
+          const { size, acquired, bad } = pool.stats();
+          eq(size, 1);
+          eq(acquired, 0);
+          eq(bad, 1);
+          done();
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
+      });
+
+      it('should discard quaranteened resources that were destroyed after the timeout expired', async (t, done) => {
+        const resources = [{ destroyDelay: 200, value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, destroyTimeout: 100 });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
+
+        setTimeout(() => {
+          const { size, acquired, bad } = pool.stats();
+          eq(size, 0);
+          eq(acquired, 0);
+          eq(bad, 0);
+          done();
+        }, 300).unref();
+      });
     });
 
     describe('evictBadResources', () => {
@@ -914,6 +964,27 @@ describe('Pool', () => {
         });
 
         await pool.shutdown();
+      });
+    });
+  });
+
+  describe('Resource Management', () => {
+
+    describe('Eviction', () => {
+
+      it('should evict idle resources once their evictionThreshold has been exceeded', () => {
+      });
+
+      it('should not evict idle resources when the pool size is at minimum', () => {
+      });
+
+      it('should quaranteen evicted resources that failed to be destroyed due to error', () => {
+      });
+
+      it('should quaranteen evicted resources that failed to be destroyed before the destroyTimeout was exceeded', () => {
+      });
+
+      it('should discard bad resources that are destroyed after the timeout expired', () => {
       });
     });
   });
