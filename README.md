@@ -256,12 +256,12 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### Pool Stats
 
-| Generic Pool          | X-Pool                           | Notes |
-| --------------------- | -------------------------------- | ----- |
-| spareResourceCapacity | stats().spare                    |       |
-| size                  | stats().size                     |       |
-| available             | stats().idle                     |       |
-| borrowed              | stats().acquired                 |       |
-| pending               | stats().queued + stats().pending |       |
-| max                   | Not Supported                    |       |
-| min                   | Not Supported                    |       |
+| Generic Pool          | X-Pool                                                            | Notes |
+| --------------------- | ----------------------------------------------------------------- | ----- |
+| spareResourceCapacity | options.maxSize - stats().size - stats().queued - stats().pending |       |
+| size                  | stats().size                                                      |       |
+| available             | stats().idle                                                      |       |
+| borrowed              | stats().acquired                                                  |       |
+| pending               | stats().queued + stats().pending                                  |       |
+| max                   | Not Supported                                                     |       |
+| min                   | Not Supported                                                     |       |
