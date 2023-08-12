@@ -8,7 +8,7 @@ module.exports = class TestFactory {
   }
 
   async create() {
-    if (this._resourceDefinitions.length === 0) throw new Error('Test Factory has exhausted all resources');
+    if (this._index >= this._resourceDefinitions.length) throw new Error('Test Factory has exhausted all resources');
     const rd = this._resourceDefinitions[this._index++];
     if (rd.createDelay) await scheduler.wait(rd.createDelay);
     if (rd.createError) throw new Error(rd.createError);
@@ -23,9 +23,9 @@ module.exports = class TestFactory {
 
   async destroy(resource) {
     const rd = this._findResourceDefinition(resource);
+    rd.destroyed = new Date();
     if (rd.destroyDelay) await scheduler.wait(rd.destroyDelay);
     if (rd.destroyError) throw new Error(rd.destroyError);
-    rd.destroyed = new Date();
   }
 
   _findResourceDefinition(resource) {

@@ -420,6 +420,19 @@ describe('Pool', () => {
         await pool.acquire();
       });
 
+      it('should destroy resources which failed validation', async (t, done) => {
+        const resources = [{ validateError: 'Oh Noes!', value: 'R1' }, 'R2'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        setTimeout(() => {
+          ok(factory.wasDestroyed('R1'), 'Resource was not destroyed');
+          done();
+        }, 100).unref();
+
+        await pool.acquire();
+      });
+
       it('should block requests once the maximum pool size has been reached', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
