@@ -428,7 +428,7 @@ describe('Pool', () => {
         setTimeout(() => {
           ok(factory.wasDestroyed('R1'), 'Resource was not destroyed');
           done();
-        }, 100).unref();
+        }, 100);
 
         await pool.acquire();
       });
@@ -452,7 +452,7 @@ describe('Pool', () => {
         const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
         const resource1 = await pool.acquire();
-        setTimeout(() => pool.release(resource1), 100).unref();
+        setTimeout(() => pool.release(resource1), 100);
 
         const before = Date.now();
         const resource2 = await pool.acquire();
@@ -468,7 +468,7 @@ describe('Pool', () => {
         const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
         const resource1 = await pool.acquire();
-        setTimeout(() => pool.destroy(resource1), 100).unref();
+        setTimeout(() => pool.destroy(resource1), 100);
 
         const before = Date.now();
         const resource2 = await pool.acquire();
@@ -522,7 +522,7 @@ describe('Pool', () => {
           eq(size, 0);
           eq(acquired, 0);
           eq(idle, 0);
-        }, 100).unref();
+        }, 100);
       });
 
       it('should destroy the supplied resource eventually', async (t, done) => {
@@ -537,7 +537,7 @@ describe('Pool', () => {
           if (!factory.wasDestroyed(resource)) return;
           clearInterval(timerId);
           done();
-        }).unref();
+        });
       });
 
       it('should report resource destruction errors via a specific event', async (t, done) => {
@@ -648,7 +648,7 @@ describe('Pool', () => {
           eq(acquired, 0);
           eq(bad, 0);
           done();
-        }, 300).unref();
+        }, 300);
       });
     });
 
@@ -910,18 +910,27 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, maxSize: 1 });
 
-        const resource1 = await pool.acquire(); // acquire the only resource
+        // Acquire the only resource
+        const resource1 = await pool.acquire();
+
+        // Release the resource 200ms after it was acquired
+        setTimeout(() => pool.release(resource1), 400);
+
+        // Call shutdown while the resource is still on loan,
+        // but after the second acquire
         setTimeout(async () => {
           const before = Date.now();
           await pool.shutdown();
           const after = Date.now();
-          ok(after - before >= 200 + 200 - 100, 'Shutdown did not wait for pending acquitions');
+          ok(after - before >= 400 - 200 + 200, 'Shutdown did not wait for pending acquitions');
           done();
-        }, 100);
+        }, 200);
 
-        setTimeout(() => pool.release(resource1), 200);
-        await pool.acquire(); // create a pending acquisition
-        setTimeout(() => pool.release(resource1), 200);
+        // Create a pending acquisition
+        const resource2 = await pool.acquire();
+
+        // Release the resource in 200ms after it was acquired
+        setTimeout(() => pool.release(resource2), 200);
       });
 
       it('should reject when the shutdownTimeout is exceeded', async () => {
