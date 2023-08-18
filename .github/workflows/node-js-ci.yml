@@ -24,6 +24,8 @@ jobs:
 
       - name: Test
         run: npm test
+        env:
+          debug: "x-pool"
 
   code-climate:
     needs: build
