@@ -312,7 +312,7 @@ describe('Pool', () => {
         const after = Date.now();
 
         eq(resource, 'R3');
-        ok(after - before >= 200, 'Did not wait between resource creation attempts');
+        ok(after - before >= 200, `Only waited an average of ${(after - before) / 2}ms between resource creation attempts`);
       });
 
       it('should wait the specified time between resource creation attempts', async () => {
