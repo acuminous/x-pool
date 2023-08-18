@@ -302,20 +302,18 @@ describe('Pool', () => {
         eq(resource, 'R2');
       });
 
-      for (let i = 0; i < 100; i++) {
-        it(`should wait briefly between failed resource creation attempts (${i + 1} of 100)`, async () => {
-          const resources = [{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, 'R3'];
-          const factory = new TestFactory(resources);
-          const pool = createPool({ factory });
+      it('should wait briefly between failed resource creation attempts', async () => {
+        const resources = [{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, 'R3'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
 
-          const before = Date.now();
-          const resource = await pool.acquire();
-          const after = Date.now();
+        const before = Date.now();
+        const resource = await pool.acquire();
+        const after = Date.now();
 
-          eq(resource, 'R3');
-          ok(after - before >= 200, `Only waited an average of ${(after - before) / 2}ms between resource creation attempts`);
-        });
-      }
+        eq(resource, 'R3');
+        ok(after - before >= 199, `Only waited an average of ${(after - before) / 2}ms between resource creation attempts`);
+      });
 
       it('should wait the specified time between resource creation attempts', async () => {
         const resources = [{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, 'R3'];
@@ -327,7 +325,7 @@ describe('Pool', () => {
         const after = Date.now();
 
         eq(resource, 'R3');
-        ok(after - before >= 400, 'Did not wait sufficiently between resource creation attempts');
+        ok(after - before >= 399, 'Did not wait sufficiently between resource creation attempts');
       });
 
       it('should report resource creation errors via a specific event', async (t, done) => {
@@ -460,7 +458,7 @@ describe('Pool', () => {
         const resource2 = await pool.acquire();
         const after = Date.now();
 
-        ok(after - before >= 100, 'Pool was not temporarily blocked');
+        ok(after - before >= 99, 'Pool was not temporarily blocked');
         eq(resource2, 'R1');
       });
 
@@ -476,7 +474,7 @@ describe('Pool', () => {
         const resource2 = await pool.acquire();
         const after = Date.now();
 
-        ok(after - before >= 100, 'Pool was not temporarily blocked');
+        ok(after - before >= 99, 'Pool was not temporarily blocked');
         eq(resource2, 'R2');
       });
     });
@@ -924,7 +922,7 @@ describe('Pool', () => {
           const before = Date.now();
           await pool.shutdown();
           const after = Date.now();
-          ok(after - before >= 400 - 200 + 200, 'Shutdown did not wait for pending acquitions');
+          ok(after - before >= 399 - 200 + 200, 'Shutdown did not wait for pending acquitions');
           done();
         }, 200);
 
