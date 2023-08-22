@@ -145,12 +145,12 @@ Returns the following of statistics about the pool
 
 | Name      | Type    | Notes                                                                      |
 | --------- | ------- | -------------------------------------------------------------------------- |
-| size      | integer | The current pool size (idle + acquired + bad)                              |
-| idle      | integer | The number of resources currently idling in the pool                       |
 | queued    | integer | The number of queued acquisition requests                                  |
-| pending   | integer | The number of resources in the process of being acquired                   |
+| acquiring | integer | The number of resources in the process of being acquired                   |
 | acquired  | integer | The number of resources currently in use                                   |
+| idle      | integer | The number of resources currently idling in the pool                       |
 | bad       | integer | The number of resourses which failed to be destroyed                       |
+| size      | integer | The current pool size (idle + acquired + bad)                              |
 | available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
 
 ### shutdown() : Promise&lt;void&gt;
@@ -256,12 +256,12 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### Pool Stats
 
-| Generic Pool          | X-Pool                                                            | Notes |
-| --------------------- | ----------------------------------------------------------------- | ----- |
-| spareResourceCapacity | options.maxSize - stats().size - stats().queued - stats().pending |       |
-| size                  | stats().size                                                      |       |
-| available             | stats().idle                                                      |       |
-| borrowed              | stats().acquired                                                  |       |
-| pending               | stats().queued + stats().pending                                  |       |
-| max                   | Not Supported                                                     |       |
-| min                   | Not Supported                                                     |       |
+| Generic Pool          | X-Pool                                                                                             | Notes |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ----- |
+| spareResourceCapacity | Math.max(0, options.maxSize - stats().queued - stats().acquiring - stats().acquired - stats().bad) |       |
+| size                  | stats().size                                                                                       |       |
+| available             | stats().idle                                                                                       |       |
+| borrowed              | stats().acquired                                                                                   |       |
+| pending               | stats().queued + stats().acquiring                                                                 |       |
+| max                   | options.maxSize                                                                                    |       |
+| min                   | optiosn.minSize                                                                                    |       |
