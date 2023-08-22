@@ -17,7 +17,7 @@ import ExampleFactory from "./ExampleFactory";
 
   console.log("Press CTRL+C to quit");
 
-  const executors = Array(3).fill(null).map(async () => {
+  const executors = Array(20).fill(null).map(async () => {
     while (running) {
       await pool.with(async (resource) => {
         console.log(resource);
