@@ -152,6 +152,7 @@ Returns the following of statistics about the pool
 | bad       | integer | The number of resourses which failed to be destroyed                       |
 | size      | integer | The current pool size (idle + acquired + bad)                              |
 | available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
+| peak      | integer | The peak pool size                                                         |
 
 ### shutdown() : Promise&lt;void&gt;
 
