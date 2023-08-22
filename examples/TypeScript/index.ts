@@ -19,14 +19,10 @@ import ExampleFactory from "./ExampleFactory";
 
   const executors = Array(3).fill(null).map(async () => {
     while (running) {
-      let s: string | undefined;
-      try {
-        s = await pool.acquire();
-        console.log(s);
+      await pool.with(async (resource) => {
+        console.log(resource);
         await scheduler.wait(100);
-      } finally {
-        if (s) pool.release(s);
-      }
+      });
     }
   });
 

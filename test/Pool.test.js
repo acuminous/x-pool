@@ -507,6 +507,40 @@ describe('Pool', () => {
       });
     });
 
+    describe('with', () => {
+
+      it('should acquire a resource', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        await pool.with(async (resource) => {
+          eq(resource, 'R1');
+        });
+      });
+
+      it('should yield the result', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        const result = await pool.with(async () => 'ok');
+
+        eq(result, 'ok');
+      });
+
+      it('should release resource', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        await pool.with(() => { });
+
+        const { idle } = pool.stats();
+        eq(idle, 1);
+      });
+    });
+
     describe('destroy', () => {
 
       it('should remove the supplied resource from the pool eventually', async () => {

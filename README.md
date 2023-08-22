@@ -119,6 +119,23 @@ pool.release(resource);
 
 Returns a resource to the pool. If the resource is not managed it will be discarded without error.
 
+### with((resource : T) => Promise<any>) : Promise<any>
+
+```js
+const result = await pool.with(async (resource) => {
+  // do something with the resource
+});
+```
+
+Acquires a resource, passes it to the supplied function, and releases it when the function ends
+
+#### Errors
+
+| Code                                | Notes                                                                       |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded                                            |
+| ERR_X&#8209;POOL_OPERATION_FAILED   | The resource could not be acquired (e.g. because the pool is shutting down) |
+
 ### destroy() : void
 
 ```js
@@ -235,18 +252,18 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### API
 
-| Generic Pool                                   | X-Pool                             | Notes                                                                                                                                                                                                                      |
-| ---------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| acquire(priority? : number) : Promise&lt;T&gt; | acquire() : Promise&lt;T&gt;       | X-Pool does not currently support priorities                                                                                                                                                                               |
-| isBorrowedResource() : boolean                 | Not Supported                      | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
-| isBorrowedResource() : boolean                 | Not Supported                      | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
-| release(resource : T) : Promise&lt;void&gt;    | release(resource : T) : void       | Releasing resources is a synchronous operation so there is no need to return a promise                                                                                                                                     |
-| destroy(resource : T) : Promise&lt;void&gt;    | destroy(resource : T) : void       | Resources are destroyed in the background so there is no need for this method to return a promise                                                                                                                          |
-| start() : void                                 | initialise() : Promise&lt;void&gt; | Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to. |
-| ready() : void                                 | Not Supported                      | Await the initialise method instead.                                                                                                                                                                                       |
-| use() : Promise&lt;any&gt;                     | Not Supported                      | We will consider adding this feature if needed.                                                                                                                                                                            |
-| drain() : Promise&lt;void&gt;                  | shutdown() : Promise&lt;void&gt;   |                                                                                                                                                                                                                            |
-| clear() : Promise&lt;void&gt; Not Supported    | Not Supported                      | Not necessary with X-Pool                                                                                                                                                                                                  |
+| Generic Pool                                                  | X-Pool                                                         | Notes                                                                                                                                                                                                                      |
+| ------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| acquire(priority? : number) : Promise&lt;T&gt;                | acquire() : Promise&lt;T&gt;                                   | X-Pool does not currently support priorities                                                                                                                                                                               |
+| isBorrowedResource() : boolean                                | Not Supported                                                  | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
+| isBorrowedResource() : boolean                                | Not Supported                                                  | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
+| release(resource : T) : Promise&lt;void&gt;                   | release(resource : T) : void                                   | Releasing resources is a synchronous operation so there is no need to return a promise                                                                                                                                     |
+| destroy(resource : T) : Promise&lt;void&gt;                   | destroy(resource : T) : void                                   | Resources are destroyed in the background so there is no need for this method to return a promise                                                                                                                          |
+| start() : void                                                | initialise() : Promise&lt;void&gt;                             | Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to. |
+| ready() : void                                                | Not Supported                                                  | Await the initialise method instead.                                                                                                                                                                                       |
+| use((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt; | with((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt; | We will consider adding this feature if needed.                                                                                                                                                                            |
+| drain() : Promise&lt;void&gt;                                 | shutdown() : Promise&lt;void&gt;                               |                                                                                                                                                                                                                            |
+| clear() : Promise&lt;void&gt; Not Supported                   | Not Supported                                                  | Not necessary with X-Pool                                                                                                                                                                                                  |
 
 ### Events
 
