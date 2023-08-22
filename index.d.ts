@@ -29,11 +29,14 @@ export interface Factory<T> {
 }
 
 export type PoolStats = {
-  size: number;
-  idle: number;
+  pending: number;
+  acquiring: number;
   acquired: number;
+  idle: number;
   bad: number;
   available: number;
+  size: number;
+  peak: number
 }
 
 export namespace Errors {
