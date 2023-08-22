@@ -817,7 +817,7 @@ describe('Pool', () => {
         });
       });
 
-      it('should reject acquition requests', async () => {
+      it('should reject new acquisition requests', async () => {
         const factory = new TestFactory();
         const pool = createPool({ factory });
 
