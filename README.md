@@ -25,17 +25,17 @@ try {
 <!-- no toc -->
 - [Configuration Options](#configuration-options)
   - [Custom Factories](#custom-factories)
-  - [Pool API](#pool-api)
-    - [initialise](#initialise--promisevoid)
-    - [acquire](#acquire--promiset)
-    - [release](#releaseresource-t--void)
-    - [with](#withresource--t--promise--promise)
-    - [destroy](#destroy--void)
-    - [evictBadResources](#evictbadresources--void)
-    - [stats](#stats--poolstats)
-    - [shutdown](#shutdown--promisevoid)
-  - [Resource Management](#resource-management)
-  - [Migrating from Generic Pool](#migrating-from-generic-pool)
+- [Pool API](#pool-api)
+  - [initialise](#initialise--promisevoid)
+  - [acquire](#acquire--promiset)
+  - [release](#releaseresource-t--void)
+  - [with](#withresource--t--promise--promise)
+  - [destroy](#destroy--void)
+  - [evictBadResources](#evictbadresources--void)
+  - [stats](#stats--poolstats)
+  - [shutdown](#shutdown--promisevoid)
+- [Resource Management](#resource-management)
+- [Migrating from Generic Pool](#migrating-from-generic-pool)
 
 ## Configuration Options
 
