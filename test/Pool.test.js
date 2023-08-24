@@ -97,6 +97,27 @@ describe('Pool', () => {
       });
     });
 
+    describe('maxQueueDepth', () => {
+
+      it('should require maxQueueDepth to be a number', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxQueueDepth: false }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The maxQueueDepth option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+
+      it('should require maxQueueDepth to be at least 1', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxQueueDepth: 0 }), (err) => {
+          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.message, 'The maxQueueDepth option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+    });
+
     describe('acquireTimeout', () => {
 
       it('should require an acquireTimeout', () => {
@@ -240,6 +261,14 @@ describe('Pool', () => {
         eq(size, 2);
         eq(idle, 1);
         eq(acquired, 1);
+      });
+
+      it('should not exceed max queue depth when initialising', async () => {
+        const resources = new Array(100).fill().map((_, index) => ({ createDelay: 100, value: `R${index + 1}` }));
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 100, maxSize: 100, maxQueueDepth: 3, acquireTimeout: 1000 });
+
+        await pool.initialise();
       });
     });
 
@@ -476,6 +505,24 @@ describe('Pool', () => {
 
         ok(after - before >= 99, 'Pool was not temporarily blocked');
         eq(resource2, 'R2');
+      });
+
+      it('should honour max queue depth', async () => {
+        const resources = ['R1'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, maxSize: 1, maxQueueDepth: 3, acquireTimeout: 100 });
+
+        await pool.acquire();
+
+        // The following acquisitions will timeout
+        pool.acquire().catch(() => {});
+        pool.acquire().catch(() => {});
+        pool.acquire().catch(() => {});
+
+        await rejects(() => pool.acquire(), (err) => {
+          eq(err.code, 'ERR_X-POOL_MAX_QUEUE_DEPTH_EXCEEDED');
+          return true;
+        });
       });
     });
 
@@ -1084,8 +1131,8 @@ describe('Pool', () => {
   });
 });
 
-function createPool({ factory, minSize, maxSize, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
-  return new Pool({ factory, minSize, maxSize, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
+function createPool({ factory, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
+  return new Pool({ factory, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
 }
 
 function acquireResources(pool, count) {

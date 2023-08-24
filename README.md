@@ -26,9 +26,10 @@ try {
 
 | Name                 | Type    | Required | Default  | Notes                                                                                                                          |
 | -------------------- | ------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| factory              | Factory | Y        |          | An instance of a resource factory                                                                                              |
+| factory              | Factory | Y        |          | An instance of a resource factory.                                                                                             |
 | minSize              | integer | N        | 0        | Specifies the minimum pool size.                                                                                               |
 | maxSize              | integer | N        | Infinity | Specifies the maximum pool size.                                                                                               |
+| maxQueueDepth        | integer | N        | Infinity | Specifies the maximum acquire queue depth.                                                                                     |
 | initialiseTimeout    | integer | N        |          | The number of milliseconds the pool will wait to initialise. If unset the pool will wait undefinitely.                         |
 | acquireTimeout       | integer | Y        |          | The number of milliseconds the pool will wait to acquire a resource before rejecting.                                          |
 | acquireRetryInterval | integer | N        | 100      | The number of milliseconds the pool will wait before retrying resource acquition after a failure.                              |
@@ -106,10 +107,12 @@ There are equally strong arguments to re-issue the most recently used reosurce a
 
 #### Errors
 
-| Code                                | Notes                                                                       |
-| ----------------------------------- | --------------------------------------------------------------------------- |
-| ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded                                            |
-| ERR_X&#8209;POOL_OPERATION_FAILED   | The resource could not be acquired (e.g. because the pool is shutting down) |
+| Code                                      | Notes                                                                       |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| ERR_X&#8209;POOL_OPERATION_TIMEDOUT       | The acquire timeout was exceeded                                            |
+| ERR_X&#8209;POOL_OPERATION_FAILED         | The resource could not be acquired (e.g. because the pool is shutting down) |
+| ERR_X&#8209;POOL_MAX_QUEUE_DEPTH_EXCEEDED | The maximum acquire queue depth was exceeded                                |
+
 
 ### release(resource: T) : void
 
@@ -237,7 +240,7 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 | ------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- |
 | max                       | maxSize        |                                                                                                                       |
 | min                       | minSize        |                                                                                                                       |
-| maxWaitingClients         | Not Supported  | We suggest using the acquireTimeout option instead.                                                                   |
+| maxWaitingClients         | maxQueueDepth  |                                                                                                                       |
 | testOnBorrow              | Not Supported  | Use an empty `factory.validate` method instead.                                                                       |
 | acquireTimeoutMillis      | acquireTimeout | This option is mandatory with X-Pool.                                                                                 |
 | destroyTimeoutMillis      | destroyTimeout | This option is mandatory with X-Pool.                                                                                 |
