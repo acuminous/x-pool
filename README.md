@@ -22,7 +22,10 @@ try {
 }
 ```
 
+## Index
+
 <!-- no toc -->
+
 - [Configuration Options](#configuration-options)
 - [Custom Factories](#custom-factories)
 - [Pool API](#pool-api)
@@ -128,11 +131,10 @@ There are equally strong arguments to re-issue the most recently used reosurce a
 | ERR_X&#8209;POOL_OPERATION_FAILED         | The resource could not be acquired (e.g. because the pool is shutting down) |
 | ERR_X&#8209;POOL_MAX_QUEUE_DEPTH_EXCEEDED | The maximum acquire queue depth was exceeded                                |
 
-
-### release(resource: T) : void
+### release(resource: T) : Promise<void>
 
 ```js
-pool.release(resource);
+await pool.release(resource);
 ```
 
 Returns a resource to the pool. If the resource is not managed it will be discarded without error.
@@ -154,18 +156,18 @@ Acquires a resource, passes it to the supplied function, and releases it when th
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded                                            |
 | ERR_X&#8209;POOL_OPERATION_FAILED   | The resource could not be acquired (e.g. because the pool is shutting down) |
 
-### destroy() : void
+### destroy() : Promise<void>
 
 ```js
-pool.destroy(resource);
+await pool.destroy(resource);
 ```
 
 Instructs the pool to destroy a resource instead of returning it to the pool. The act of destroying a resource is performed in the background so the destroy method returns instantly. If the destroy operation fails or times out the resource still takes up space within the pool, although it will never be re-issued. Where the pool has been configured with a maximum size, this could lead to resource contention impacting performance. In extreme cases it could even lead to all the pool becoming unusable. If you are concerned about this possibility then you can listen for the pool `ERR_X&#8209;POOL_RESOURCE_DESTROY_FAILED` and `ERR_X&#8209;POOL_OPERATION_TIMEDOUT` events call `pool.evictBadResources()` when they occur.
 
-### evictBadResources() : void
+### evictBadResources() : Promise<void>
 
 ```js
-pool.evictBadResources();
+await pool.evictBadResources();
 ```
 
 Evicts resources that failed to be destroyed.
