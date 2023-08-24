@@ -24,7 +24,7 @@ try {
 
 <!-- no toc -->
 - [Configuration Options](#configuration-options)
-  - [Custom Factories](#custom-factories)
+- [Custom Factories](#custom-factories)
 - [Pool API](#pool-api)
   - [initialise](#initialise--promisevoid)
   - [acquire](#acquire--promiset)
