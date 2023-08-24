@@ -22,22 +22,37 @@ try {
 }
 ```
 
+<!-- no toc -->
+- [Configuration Options](#configuration-options)
+  - [Custom Factories](#custom-factories)
+  - [Pool API](#pool-api)
+    - [initialise](#initialise--promisevoid)
+    - [acquire](#acquire--promiset)
+    - [release](#releaseresource-t--void)
+    - [with](#withresource--t--promise--promise)
+    - [destroy](#destroy--void)
+    - [evictBadResources](#evictbadresources--void)
+    - [stats](#stats--poolstats)
+    - [shutdown](#shutdown--promisevoid)
+  - [Resource Management](#resource-management)
+  - [Migrating from Generic Pool](#migrating-from-generic-pool)
+
 ## Configuration Options
 
-| Name                 | Type    | Required | Default  | Notes                                                                                                                          |
-| -------------------- | ------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| factory              | Factory | Y        |          | An instance of a resource factory.                                                                                             |
-| minSize              | integer | N        | 0        | Specifies the minimum pool size.                                                                                               |
-| maxSize              | integer | N        | Infinity | Specifies the maximum pool size.                                                                                               |
-| maxQueueDepth        | integer | N        | Infinity | Specifies the maximum acquire queue depth.                                                                                     |
-| initialiseTimeout    | integer | N        |          | The number of milliseconds the pool will wait to initialise. If unset the pool will wait undefinitely.                         |
-| acquireTimeout       | integer | Y        |          | The number of milliseconds the pool will wait to acquire a resource before rejecting.                                          |
-| acquireRetryInterval | integer | N        | 100      | The number of milliseconds the pool will wait before retrying resource acquition after a failure.                              |
-| destroyTimeout       | integer | Y        |          | The number of milliseconds the pool will wait for the factory to destroy a resource.                                           |
-| shutdownTimeout      | integer | N        |          | The number of milliseconds the pool will wait to shutdown. If unset the pool will wait undefinitely.                           |
-| revalidateInterval   | integer | N        |          | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it.             |
-| revalidateTimeout    | integer | Y        |          | The number of milliseconds the pool will wait for the factory to revalidate a resource.                                        |
-| evictionThreshold    | integer | N        |          | The number of milliseconds of idle time before the resource becomes eligible for eviction. If unset eviction will be disabled. |
+| Name                 | Type    | Required | Default  | Notes                                                                                                                                                           |
+| -------------------- | ------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| factory              | Factory | Y        |          | An instance of a resource factory.                                                                                                                              |
+| minSize              | integer | N        | 0        | Specifies the minimum pool size.                                                                                                                                |
+| maxSize              | integer | N        | Infinity | Limits the maximum pool size.                                                                                                                                   |
+| maxQueueDepth        | integer | N        | Infinity | Limits the maximum acquire queue depth, which may be useful to constrain memory usage during exceptionally high peaks. Only meaningful when maxSize is also set |
+| initialiseTimeout    | integer | N        |          | The number of milliseconds the pool will wait to initialise. If unset the pool will wait undefinitely.                                                          |
+| acquireTimeout       | integer | Y        |          | The number of milliseconds the pool will wait to acquire a resource before rejecting.                                                                           |
+| acquireRetryInterval | integer | N        | 100      | The number of milliseconds the pool will wait before retrying resource acquition after a failure.                                                               |
+| destroyTimeout       | integer | Y        |          | The number of milliseconds the pool will wait for the factory to destroy a resource.                                                                            |
+| shutdownTimeout      | integer | N        |          | The number of milliseconds the pool will wait to shutdown. If unset the pool will wait undefinitely.                                                            |
+| revalidateInterval   | integer | N        |          | The number of milliseconds the pool will wait after an idle resource's creation or release before revalidating it.                                              |
+| revalidateTimeout    | integer | Y        |          | The number of milliseconds the pool will wait for the factory to revalidate a resource.                                                                         |
+| evictionThreshold    | integer | N        |          | The number of milliseconds of idle time before the resource becomes eligible for eviction. If unset eviction will be disabled.                                  |
 
 #### Errors
 
@@ -163,16 +178,17 @@ const { size, idle, pending, queued, acquired, available, bad } = pool.stats();
 
 Returns the following of statistics about the pool
 
-| Name      | Type    | Notes                                                                      |
-| --------- | ------- | -------------------------------------------------------------------------- |
-| queued    | integer | The number of queued acquisition requests                                  |
-| acquiring | integer | The number of resources in the process of being acquired                   |
-| acquired  | integer | The number of resources currently in use                                   |
-| idle      | integer | The number of resources currently idling in the pool                       |
-| bad       | integer | The number of resourses which failed to be destroyed                       |
-| size      | integer | The current pool size (idle + acquired + bad)                              |
-| available | integer | The number of resources available from the pool (maxSize - acquired - bad) |
-| peak      | integer | The peak pool size                                                         |
+| Name       | Type    | Notes                                                                      |
+| ---------- | ------- | -------------------------------------------------------------------------- |
+| queued     | integer | The number of queued acquisition requests                                  |
+| acquiring  | integer | The number of resources in the process of being acquired                   |
+| acquired   | integer | The number of resources currently in use                                   |
+| idle       | integer | The number of resources currently idling in the pool                       |
+| destroying | integer | The nubmer of resources currently being destroyed                          |
+| bad        | integer | The number of resourses which failed to be destroyed                       |
+| size       | integer | The current pool size (idle + acquired + bad)                              |
+| available  | integer | The number of resources available from the pool (maxSize - acquired - bad) |
+| peak       | integer | The peak pool size                                                         |
 
 ### shutdown() : Promise&lt;void&gt;
 
@@ -277,12 +293,12 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### Pool Stats
 
-| Generic Pool          | X-Pool                                                                                             | Notes |
-| --------------------- | -------------------------------------------------------------------------------------------------- | ----- |
-| spareResourceCapacity | Math.max(0, options.maxSize - stats().queued - stats().acquiring - stats().acquired - stats().bad) |       |
-| size                  | stats().size                                                                                       |       |
-| available             | stats().idle                                                                                       |       |
-| borrowed              | stats().acquired                                                                                   |       |
-| pending               | stats().queued + stats().acquiring                                                                 |       |
-| max                   | options.maxSize                                                                                    |       |
-| min                   | optiosn.minSize                                                                                    |       |
+| Generic Pool          | X-Pool                                                                                             | Notes                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| spareResourceCapacity | Math.max(0, options.maxSize - stats().queued - stats().acquiring - stats().acquired - stats().bad) |                                                                                     |
+| size                  | stats().size                                                                                       |                                                                                     |
+| available             | stats().idle                                                                                       |                                                                                     |
+| borrowed              | stats().acquired                                                                                   |                                                                                     |
+| pending               | stats().queued + stats().acquiring                                                                 |                                                                                     |
+| max                   | options.maxSize                                                                                    |                                                                                     |
+| min                   | optiosn.minSize                                                                                    | X-Pool does not silently adjust the min pool size when it exceeds the max pool size |
