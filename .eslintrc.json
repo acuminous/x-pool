@@ -11,6 +11,7 @@
     "class-methods-use-this": 0,
     "max-classes-per-file": 0,
     "max-len": 0,
+    "lines-between-class-members": 0,
     "no-await-in-loop": 0,
     "no-cond-assign": 0,
     "no-empty-function": 0,
