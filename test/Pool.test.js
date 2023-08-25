@@ -746,7 +746,7 @@ describe('Pool', () => {
           const stats1 = pool.stats();
           eq(stats1.bad, 2);
 
-          await pool.evictBadResources();
+          pool.evictBadResources();
 
           const stats2 = pool.stats();
           eq(stats2.bad, 0);
