@@ -3,7 +3,7 @@ const { scheduler } = require('node:timers/promises');
 const debug = require('debug')('x-pool');
 const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
-const { Pool } = require('../index');
+const { Pool, Operations: { XPoolEvent, ReleaseResourceOperation } } = require('../index');
 
 describe('Pool', () => {
 
@@ -304,7 +304,7 @@ describe('Pool', () => {
 
         const resource1 = await pool.acquire();
         eq(resource1, 'R1');
-        await pool.release(resource1);
+        pool.release(resource1);
 
         const resource2 = await pool.acquire();
         eq(resource2, 'R1');
@@ -535,7 +535,7 @@ describe('Pool', () => {
         const pool = createPool({ factory });
 
         const resource = await pool.acquire();
-        await pool.release(resource);
+        pool.release(resource);
 
         const { size, acquired, idle } = pool.stats();
         eq(size, 1);
@@ -547,7 +547,7 @@ describe('Pool', () => {
         const factory = new TestFactory();
         const pool = createPool({ factory });
 
-        await pool.release('XX');
+        pool.release('XX');
 
         const { size, idle } = pool.stats();
         eq(size, 0);
@@ -597,7 +597,7 @@ describe('Pool', () => {
         const pool = createPool({ factory });
 
         const resource = await pool.acquire();
-        await await pool.destroy(resource);
+        pool.destroy(resource);
 
         setTimeout(() => {
           const { size, acquired, idle } = pool.stats();
@@ -613,7 +613,7 @@ describe('Pool', () => {
         const pool = createPool({ factory });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
 
         const timerId = setInterval(() => {
           if (!factory.wasDestroyed(resource)) return;
@@ -634,7 +634,7 @@ describe('Pool', () => {
         });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
@@ -649,7 +649,7 @@ describe('Pool', () => {
         });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should report resource destruction that exceed the destroyTimeout', async (t, done) => {
@@ -664,7 +664,7 @@ describe('Pool', () => {
         });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
@@ -679,7 +679,7 @@ describe('Pool', () => {
         });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should quaranteen resources that failed to be destroyed due to error', async (t, done) => {
@@ -696,7 +696,7 @@ describe('Pool', () => {
         });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should quaranteen resources that failed to be destroyed due to timeout', async (t, done) => {
@@ -713,7 +713,7 @@ describe('Pool', () => {
         });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should discard quaranteened resources that were destroyed after the timeout expired', async (t, done) => {
@@ -722,7 +722,7 @@ describe('Pool', () => {
         const pool = createPool({ factory, destroyTimeout: 100 });
 
         const resource = await pool.acquire();
-        await pool.destroy(resource);
+        pool.destroy(resource);
 
         setTimeout(() => {
           const { size, acquired, bad } = pool.stats();
@@ -754,8 +754,8 @@ describe('Pool', () => {
         });
 
         const [resource1, resource2] = await acquireResources(pool, 2);
-        await pool.destroy(resource1);
-        await pool.destroy(resource2);
+        pool.destroy(resource1);
+        pool.destroy(resource2);
       });
 
     });
@@ -875,8 +875,8 @@ describe('Pool', () => {
         });
 
         const [, resource2, resource3] = await acquireResources(pool, 3);
-        await pool.release(resource2);
-        await pool.destroy(resource3);
+        pool.release(resource2);
+        pool.destroy(resource3);
       });
 
       it('should report stats for a pool with a mixture of resource states and a maximum pool size', async (t, done) => {
@@ -898,8 +898,8 @@ describe('Pool', () => {
         });
 
         const [, resource2, resource3] = await acquireResources(pool, 3);
-        await pool.release(resource2);
-        await pool.destroy(resource3);
+        pool.release(resource2);
+        pool.destroy(resource3);
       });
 
       it('should report the peak pool size', async () => {
@@ -984,7 +984,7 @@ describe('Pool', () => {
           done();
         });
 
-        await pool.destroy(resource);
+        pool.destroy(resource);
       });
 
       it('should wait for idle resources to be destroyed', async () => {
@@ -1134,7 +1134,7 @@ describe('Pool', () => {
 
 function createPool({ factory, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
   const pool = new Pool({ factory, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
-  pool.on('X-POOL_EVENT', ({ message }) => {
+  pool.on(XPoolEvent, ({ message }) => {
     debug(message);
   });
   return pool;
@@ -1145,7 +1145,10 @@ function acquireResources(pool, count) {
 }
 
 function releaseResources(pool, resources) {
-  resources.map((r) => pool.release(r));
+  return Promise.all(resources.map((r) => new Promise((resolve) => {
+    pool.once(ReleaseResourceOperation.SUCCEEDED, resolve);
+    pool.release(r);
+  })));
 }
 
 function destroyResources(pool, resources) {
