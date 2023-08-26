@@ -427,7 +427,6 @@ describe('Pool', () => {
         });
       });
 
-      // TODO CHECK POOL STATS ESPECIALLY acquiring
       it('should use valid resources yielded after the acquire timeout is exceeded', async () => {
         const resources = [{ createDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
@@ -439,6 +438,10 @@ describe('Pool', () => {
         });
 
         await scheduler.wait(200);
+
+        eq(pool.stats().acquiring, 0);
+        eq(pool.stats().acquired, 0);
+        eq(pool.stats().idle, 1);
 
         const resource = await pool.acquire();
         eq(resource, 'R1');
