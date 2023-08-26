@@ -311,13 +311,11 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 X-Pool does not currently support priorities
 
 #### acquire(priority? : number) : Promise&lt;T&gt;
-acquire() : Promise&lt;T&gt; |
+acquire() : Promise&lt;T&gt;
 
 X-Pool does not currently support priorities
 
 #### isBorrowedResource() : boolean
-Not Supported |
-
 This method is not necessary since returning an unmanaged resource to the pool will have no effect.
 
 #### release(resource : T) : Promise&lt;void&gt;
@@ -326,31 +324,27 @@ release(resource : T) : void |
 Releasing resources is a synchronous operation hence we do not return a promise.
 
 #### destroy(resource : T) : Promise&lt;void&gt;
-destroy(resource : T) : void |
+destroy(resource : T) : void
 
 Resources are destroyed in the background so we do not return a promise.
 
 #### start() : void
-initialise() : Promise&lt;void&gt; |
+initialise() : Promise&lt;void&gt;
 
 Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to.
 
 #### ready() : void
-Not Supported |
-
 Await the initialise method or listen for the InitialisePoolOperation.SUCCEEDED event.
 
 #### use((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt;
-with((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt; |
+with((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt;
 
 We will consider adding this feature if needed.
 
 #### drain() : Promise&lt;void&gt;
-shutdown() : Promise&lt;void&gt; |
+shutdown() : Promise&lt;void&gt;
 
 #### clear() : Promise&lt;void&gt; Not Supported
-Not Supported |
-
 Not necessary with X-Pool
 
 ### Events
