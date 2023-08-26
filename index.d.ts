@@ -14,6 +14,7 @@ export class Pool<T> extends EventEmitter {
 
 export type PoolOptions<T> = {
   factory: Factory<T>;
+  autoStart?: boolean;
   minSize?: number;
   maxSize?: number;
   acquireTimeout: number;
@@ -51,4 +52,3 @@ export namespace Errors {
   class ResourceValidationFailed extends XPoolError {}
   class ResourceDestructionFailed extends XPoolError {}
 }
-

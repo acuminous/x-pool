@@ -5,7 +5,7 @@ const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
-  Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation, DestroyResourceOperation },
+  Operations: { XPoolEvent, InitialisePoolOperation, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation, DestroyResourceOperation },
   Errors: { XPoolError, ConfigurationError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout, PoolNotRunning, MaxQueueDepthExceeded },
 } = require('../index');
 
@@ -47,6 +47,31 @@ describe('Pool', () => {
           eq(err.code, ConfigurationError.code);
           eq(err.message, 'The supplied factory is missing a destroy method. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
+        });
+      });
+    });
+
+    describe('autoStart', () => {
+
+      it('should require autoStart to be a boolean', () => {
+        const factory = new TestFactory();
+        throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, autoStart: 'false' }), (err) => {
+          eq(err.code, ConfigurationError.code);
+          eq(err.message, 'The autoStart option must be a boolean. Please read the documentation at https://acuminous.github.io/x-pool');
+          return true;
+        });
+      });
+
+      it('should initialise the pool when set', async (t, done) => {
+        const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 5, autoStart: true });
+
+        pool.once(InitialisePoolOperation.SUCCEEDED, () => {
+          const { size, idle } = pool.stats();
+          eq(size, 5);
+          eq(idle, 5);
+          done();
         });
       });
     });
@@ -1256,8 +1281,8 @@ describe('Pool', () => {
   });
 });
 
-function createPool({ factory, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
-  const pool = new Pool({ factory, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
+function createPool({ factory, autoStart, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
+  const pool = new Pool({ factory, autoStart, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
   pool.on(XPoolEvent, ({ message }) => {
     debug(message);
   });

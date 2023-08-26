@@ -46,6 +46,7 @@ try {
 | Name                 | Type    | Required | Default  | Notes                                                                                                                                                          |
 | -------------------- | ------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | factory              | Factory | Y        |          | An instance of a resource factory.                                                                                                                             |
+| autoStart            | boolean | N        | false    | Initialises the pool automatically.                                                                                                                            |
 | minSize              | integer | N        | 0        | Sets the minimum pool size.                                                                                                                                    |
 | maxSize              | integer | N        | Infinity | Sets the maximum pool size.                                                                                                                                    |
 | maxQueueDepth        | integer | N        | Infinity | Sets the maximum acquire queue depth, which may be useful to constrain memory usage during exceptionally high peaks. Only meaningful when maxSize is also set. |
