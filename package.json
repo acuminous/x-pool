@@ -37,7 +37,10 @@
   "keywords": [
     "generic",
     "resource",
-    "pool"
+    "pool",
+    "typed",
+    "TypeScript",
+    "observable"
   ],
   "bugs": {
     "url": "https://github.com/acuminous/x-pool/issues"
