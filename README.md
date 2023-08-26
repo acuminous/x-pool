@@ -140,7 +140,7 @@ pool.release(resource);
 
 Returns a resource to the pool. If the resource is not managed it will be discarded without error.
 
-### with((resource : T) => Promise&lt;any&gt;) : Promise<&lt;any&gt;>
+### with((resource : T) => Promise&lt;any&gt;) : Promise&lt;any&gt;
 
 ```js
 const result = await pool.with(async (resource) => {
