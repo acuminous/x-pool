@@ -5,8 +5,8 @@ const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
-  Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation },
-  Errors: { XPoolError, ResourceCreationFailed, ResourceValidationFailed },
+  Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation, DestroyResourceOperation },
+  Errors: { XPoolError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout },
 } = require('../index');
 
 describe('Pool', () => {
@@ -380,7 +380,7 @@ describe('Pool', () => {
         await pool.acquire();
       });
 
-      it('should fallback to reporting resource creation errors via a general error event', async (t, done) => {
+      it('should report resource creation errors via a general error event', async (t, done) => {
         const createError = new Error('Oh Noes!');
         const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
@@ -398,7 +398,7 @@ describe('Pool', () => {
         await pool.acquire();
       });
 
-      it('should fallback to reporting resource creation errors via a general event', async (t, done) => {
+      it('should report resource creation errors via a general event', async (t, done) => {
         const createError = new Error('Oh Noes!');
         const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
@@ -470,7 +470,7 @@ describe('Pool', () => {
         await pool.acquire();
       });
 
-      it('should fallback to reporting resource validation errors via a general error event', async (t, done) => {
+      it('should report resource validation errors via a general error event', async (t, done) => {
         const validateError = new Error('Oh Noes!');
         const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
@@ -488,7 +488,7 @@ describe('Pool', () => {
         await pool.acquire();
       });
 
-      it('should fallback to reporting resource validation errors via a general event', async (t, done) => {
+      it('should report resource validation errors via a general event', async (t, done) => {
         const validateError = new Error('Oh Noes!');
         const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
@@ -679,13 +679,17 @@ describe('Pool', () => {
       });
 
       it('should report resource destruction errors via a specific event', async (t, done) => {
-        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const destroyError = new Error('Oh Noes!');
+        const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(DestroyResourceOperation.FAILED, ({ code, message, err }) => {
+          eq(code, DestroyResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error destroying resource: Oh Noes!$/);
+          eq(err.code, ResourceDestructionFailed.code);
+          match(err.message, /^Error destroying resource: Oh Noes!$/);
+          eq(err.cause, destroyError);
           done();
         });
 
@@ -693,14 +697,18 @@ describe('Pool', () => {
         pool.destroy(resource);
       });
 
-      it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
-        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+      it('should report resource destruction errors via a general error event', async (t, done) => {
+        const destroyError = new Error('Oh Noes!');
+        const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_ERROR', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(XPoolError, ({ code, message, err }) => {
+          eq(code, DestroyResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error destroying resource: Oh Noes!$/);
+          eq(err.code, ResourceDestructionFailed.code);
+          match(err.message, /^Error destroying resource: Oh Noes!$/);
+          eq(err.cause, destroyError);
           done();
         });
 
@@ -708,14 +716,35 @@ describe('Pool', () => {
         pool.destroy(resource);
       });
 
-      it('should report resource destruction that exceed the destroyTimeout', async (t, done) => {
+      it('should report resource destruction errors via a general event', async (t, done) => {
+        const destroyError = new Error('Oh Noes!');
+        const resources = [{ destroyError, value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        pool.on(XPoolEvent, ({ code, message, err }) => {
+          if (code !== DestroyResourceOperation.FAILED) return;
+          match(message, /^\[\d+\] Error destroying resource: Oh Noes!$/);
+          eq(err.code, ResourceDestructionFailed.code);
+          match(err.message, /^Error destroying resource: Oh Noes!$/);
+          eq(err.cause, destroyError);
+          done();
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
+      });
+
+      it('should report resource destruction timeouts', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, destroyTimeout: 100 });
 
-        pool.once('ERR_X-POOL_OPERATION_TIMEDOUT', (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
-          eq(err.message, 'destroy timedout after 100ms');
+        pool.once(DestroyResourceOperation.FAILED, ({ code, message, err }) => {
+          eq(code, DestroyResourceOperation.FAILED);
+          match(message, /^\[\d+\] Destroy timedout after 100ms$/);
+          eq(err.code, OperationTimedout.code);
+          match(err.message, /^Destroy timedout after 100ms$/);
           done();
         });
 
@@ -723,14 +752,33 @@ describe('Pool', () => {
         pool.destroy(resource);
       });
 
-      it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
-        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+      it('should report resource destruction timeouts via a general error event', async (t, done) => {
+        const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        const pool = createPool({ factory, destroyTimeout: 100 });
 
-        pool.once('ERR_X-POOL_ERROR', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(XPoolError, ({ code, message, err }) => {
+          eq(code, DestroyResourceOperation.FAILED);
+          match(message, /^\[\d+\] Destroy timedout after 100ms$/);
+          eq(err.code, OperationTimedout.code);
+          match(err.message, /^Destroy timedout after 100ms$/);
+          done();
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
+      });
+
+      it('should report resource destruction timeouts via a general event', async (t, done) => {
+        const resources = [{ destroyDelay: 200, value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, destroyTimeout: 100 });
+
+        pool.on(XPoolEvent, ({ code, message, err }) => {
+          if (code !== DestroyResourceOperation.FAILED) return;
+          match(message, /^\[\d+\] Destroy timedout after 100ms$/);
+          eq(err.code, OperationTimedout.code);
+          match(err.message, /^Destroy timedout after 100ms$/);
           done();
         });
 
@@ -743,7 +791,7 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        pool.once(DestroyResourceOperation.FAILED, () => {
           const { size, acquired, bad } = pool.stats();
           eq(size, 1);
           eq(acquired, 0);
@@ -760,7 +808,7 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, destroyTimeout: 100 });
 
-        pool.once('ERR_X-POOL_OPERATION_TIMEDOUT', () => {
+        pool.once(DestroyResourceOperation.FAILED, () => {
           const { size, acquired, bad } = pool.stats();
           eq(size, 1);
           eq(acquired, 0);
@@ -793,27 +841,20 @@ describe('Pool', () => {
     describe('evictBadResources', () => {
 
       it('should evict bad resources', async (t, done) => {
-        const resources = [{ destroyDelay: 200, value: 'R1' }, { destroyError: 'Oh Noes!', value: 'R2' }];
+        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 100 });
+        const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_OPERATION_TIMEDOUT', async () => {
-
-          const stats1 = pool.stats();
-          eq(stats1.bad, 2);
-
+        pool.once(DestroyResourceOperation.FAILED, async () => {
+          eq(pool.stats().bad, 1);
           pool.evictBadResources();
-
-          const stats2 = pool.stats();
-          eq(stats2.bad, 0);
+          eq(pool.stats().bad, 0);
           done();
         });
 
-        const [resource1, resource2] = await acquireResources(pool, 2);
-        pool.destroy(resource1);
-        pool.destroy(resource2);
+        const resource = await pool.acquire();
+        pool.destroy(resource);
       });
-
     });
 
     describe('stats', () => {
@@ -895,7 +936,7 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        pool.once(DestroyResourceOperation.FAILED, () => {
           const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
@@ -917,7 +958,7 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        pool.once(DestroyResourceOperation.FAILED, () => {
           const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
@@ -940,7 +981,7 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, maxSize: 10 });
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', () => {
+        pool.once(DestroyResourceOperation.FAILED, () => {
           const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
@@ -1026,16 +1067,14 @@ describe('Pool', () => {
 
         const resource = await pool.acquire();
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', async () => {
-          const { size: size1, bad: bad1 } = pool.stats();
-          eq(size1, 1);
-          eq(bad1, 1);
+        pool.once(DestroyResourceOperation.FAILED, async () => {
+          eq(pool.stats().size, 1);
+          eq(pool.stats().bad, 1);
 
           await pool.shutdown();
 
-          const { size: size2, bad: bad2 } = pool.stats();
-          eq(size2, 0);
-          eq(bad2, 0);
+          eq(pool.stats().size, 0);
+          eq(pool.stats().bad, 0);
 
           done();
         });
@@ -1050,15 +1089,13 @@ describe('Pool', () => {
 
         await pool.initialise();
 
-        const { size: size1, idle: idle1 } = pool.stats();
-        eq(size1, 5);
-        eq(idle1, 5);
+        eq(pool.stats().size, 5);
+        eq(pool.stats().idle, 5);
 
         await pool.shutdown();
 
-        const { size: size2, idle: idle2 } = pool.stats();
-        eq(size2, 0);
-        eq(idle2, 0);
+        eq(pool.stats().size, 0);
+        eq(pool.stats().idle, 0);
       });
 
       it('should wait for acquired resources to be released and destroyed', async () => {
@@ -1068,17 +1105,15 @@ describe('Pool', () => {
 
         const resource = await pool.acquire();
 
-        const { size: size1, acquired: acquired1 } = pool.stats();
-        eq(size1, 1);
-        eq(acquired1, 1);
+        eq(pool.stats().size, 1);
+        eq(pool.stats().acquired, 1);
 
         setTimeout(() => pool.release(resource), 100);
 
         await pool.shutdown();
 
-        const { size: size2, acquired: acquired2 } = pool.stats();
-        eq(size2, 0);
-        eq(acquired2, 0);
+        eq(pool.stats().size, 0);
+        eq(pool.stats().acquired, 0);
       });
 
       it('should wait for queued acquisitions to be honoured', async (t, done) => {
@@ -1133,31 +1168,59 @@ describe('Pool', () => {
       });
 
       it('should report resource destruction errors via a specific event', async (t, done) => {
-        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+        const destroyError = new Error('Oh Noes!');
+        const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, minSize: 1 });
 
         await pool.initialise();
 
-        pool.once('ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(DestroyResourceOperation.FAILED, ({ code, message, err }) => {
+          eq(code, DestroyResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error destroying resource: Oh Noes!$/);
+          eq(err.code, ResourceDestructionFailed.code);
+          match(err.message, /^Error destroying resource: Oh Noes!$/);
+          eq(err.cause, destroyError);
           done();
         });
 
         await pool.shutdown();
       });
 
-      it('should fallback to reporting resource destruction errors via a general event', async (t, done) => {
-        const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
+      it('should report resource destruction errors via a general error event', async (t, done) => {
+        const destroyError = new Error('Oh Noes!');
+        const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, minSize: 1 });
 
         await pool.initialise();
 
-        pool.once('ERR_X-POOL_ERROR', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_DESTRUCTION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(XPoolError, ({ code, message, err }) => {
+          eq(code, DestroyResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error destroying resource: Oh Noes!$/);
+          eq(err.code, ResourceDestructionFailed.code);
+          match(err.message, /^Error destroying resource: Oh Noes!$/);
+          eq(err.cause, destroyError);
+          done();
+        });
+
+        await pool.shutdown();
+      });
+
+      it('should report resource destruction errors via a general event', async (t, done) => {
+        const destroyError = new Error('Oh Noes!');
+        const resources = [{ destroyError, value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory, minSize: 1 });
+
+        await pool.initialise();
+
+        pool.on(XPoolEvent, ({ code, message, err }) => {
+          if (code !== DestroyResourceOperation.FAILED) return;
+          match(message, /^\[\d+\] Error destroying resource: Oh Noes!$/);
+          eq(err.code, ResourceDestructionFailed.code);
+          match(err.message, /^Error destroying resource: Oh Noes!$/);
+          eq(err.cause, destroyError);
           done();
         });
 
@@ -1209,7 +1272,7 @@ function releaseResources(pool, resources) {
 
 function destroyResources(pool, resources) {
   return Promise.all(resources.map((r) => new Promise((resolve) => {
-    pool.once('EVT_X-POOL_RESOURCE_DESTROYED', resolve);
+    pool.once(DestroyResourceOperation.SUCCEEDED, resolve);
     pool.destroy(r);
   })));
 }

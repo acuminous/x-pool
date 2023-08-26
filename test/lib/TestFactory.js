@@ -25,7 +25,7 @@ module.exports = class TestFactory {
     const rd = this._findResourceDefinition(resource);
     rd.destroyed = new Date();
     if (rd.destroyDelay) await scheduler.wait(rd.destroyDelay);
-    if (rd.destroyError) throw new Error(rd.destroyError);
+    if (rd.destroyError) throw rd.destroyError instanceof Error ? rd.destroyError : new Error(rd.destroyError);
   }
 
   _findResourceDefinition(resource) {
