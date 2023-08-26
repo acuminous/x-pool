@@ -308,12 +308,10 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### API
 
-X-Pool does not currently support priorities
-
 #### acquire(priority? : number) : Promise&lt;T&gt;
 acquire() : Promise&lt;T&gt;
 
-X-Pool does not currently support priorities
+X-Pool does not currently support priorities. If you need this feature please create an issue.
 
 #### isBorrowedResource() : boolean
 This method is not necessary since returning an unmanaged resource to the pool will have no effect.
@@ -338,8 +336,6 @@ Await the initialise method or listen for the InitialisePoolOperation.SUCCEEDED 
 
 #### use((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt;
 with((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt;
-
-We will consider adding this feature if needed.
 
 #### drain() : Promise&lt;void&gt;
 shutdown() : Promise&lt;void&gt;
