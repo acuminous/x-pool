@@ -5,8 +5,8 @@ const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
-  Operations: { XPoolEvent, CreateResourceOperation, ReleaseResourceOperation },
-  Errors: { XPoolError, ResourceCreationFailed },
+  Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation },
+  Errors: { XPoolError, ResourceCreationFailed, ResourceValidationFailed },
 } = require('../index');
 
 describe('Pool', () => {
@@ -453,13 +453,35 @@ describe('Pool', () => {
       });
 
       it('should report resource validation errors via a specific event', async (t, done) => {
-        const resources = [{ validateError: 'Oh Noes!' }, 'R2'];
+        const validateError = new Error('Oh Noes!');
+        const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_VALIDATION_FAILED', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_VALIDATION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(ValidateResourceOperation.FAILED, ({ code, message, err }) => {
+          eq(code, ValidateResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error validating resource: Oh Noes!$/);
+          eq(err.code, ResourceValidationFailed.code);
+          match(err.message, /^Error validating resource: Oh Noes!$/);
+          eq(err.cause, validateError);
+          done();
+        });
+
+        await pool.acquire();
+      });
+
+      it('should fallback to reporting resource validation errors via a general error event', async (t, done) => {
+        const validateError = new Error('Oh Noes!');
+        const resources = [{ validateError }, 'R2'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        pool.once(XPoolError, ({ code, message, err }) => {
+          eq(code, ValidateResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error validating resource: Oh Noes!$/);
+          eq(err.code, ResourceValidationFailed.code);
+          match(err.message, /^Error validating resource: Oh Noes!$/);
+          eq(err.cause, validateError);
           done();
         });
 
@@ -467,13 +489,17 @@ describe('Pool', () => {
       });
 
       it('should fallback to reporting resource validation errors via a general event', async (t, done) => {
-        const resources = [{ validateError: 'Oh Noes!' }, 'R2'];
+        const validateError = new Error('Oh Noes!');
+        const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_ERROR', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_VALIDATION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.on(XPoolEvent, ({ code, message, err }) => {
+          if (code !== ValidateResourceOperation.FAILED) return;
+          match(message, /^\[\d+\] Error validating resource: Oh Noes!$/);
+          eq(err.code, ResourceValidationFailed.code);
+          match(err.message, /^Error validating resource: Oh Noes!$/);
+          eq(err.cause, validateError);
           done();
         });
 

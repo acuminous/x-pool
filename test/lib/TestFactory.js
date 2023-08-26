@@ -18,7 +18,7 @@ module.exports = class TestFactory {
   async validate(resource) {
     const rd = this._findResourceDefinition(resource);
     rd.validated = new Date();
-    if (rd.validateError) throw new Error(rd.validateError);
+    if (rd.validateError) throw rd.validateError instanceof Error ? rd.validateError : new Error(rd.validateError);
   }
 
   async destroy(resource) {
