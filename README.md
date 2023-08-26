@@ -37,6 +37,8 @@ try {
   - [stats](#stats--poolstats)
   - [shutdown](#shutdown--promisevoid)
 - [Resource Management](#resource-management)
+- [Events](#events)
+- [Errors](#errors)
 - [Migrating from Generic Pool](#migrating-from-generic-pool)
 
 ## Configuration Options
@@ -224,35 +226,62 @@ You can configure the pool to shrink back to the `minSize` when it is not busy b
 ## Events
 
 X-Pool uses the NodeJS EventEmitter to expose information about the pool internals. Each high level operation, e.g. initialise, acquire, release, etc. has a corresponding Operation class. When the operation runs, the Pool will emit events corresponding to the start of the operation, the success of the operation or the failure of the operation.
-Some operations may emit additional events signifying an important state change within the pool. You can write code to listen to for these events as follows:
+Some operations may emit additional events signifying an important state change within the pool. The potential events are as follows:
+
+| Event                                   | Code                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| XPoolEvent                              | N/A the class is emitted                                                  |
+| XPoolOperation                          | N/A the class is emitted                                                  |
+| InitialisePoolOperation[subtype]        | X&#8209;POOL_INITIALISE_POOL_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]         |
+| ShutdownPoolOperation[subtype]          | X&#8209;POOL_SHUTDOWN_POOL_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]           |
+| AcquireResourceOperation[subtype]       | X&#8209;POOL_ACQUIRE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]        |
+| CreateResourceOperation[subtype]        | X&#8209;POOL_CREATE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]         |
+| ValidateResourceOperation[subtype]      | X&#8209;POOL_VALIDATE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]       |
+| ReleaseResourceOperation[subtype]       | X&#8209;POOL_RELEASE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]        |
+| WithResourceOperation[subtype]          | X&#8209;POOL_WITH_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]           |
+| DestroyResourceOperation[subtype]       | X&#8209;POOL_DESTROY_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]        |
+| EvictBadResourcesOperation[subtype]     | X&#8209;POOL_EVICT_BAD_RESOURCES_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]     |
+| DestroySpareResourcesOperation[subtype] | X&#8209;POOL_DESTROY_SPARE_RESOURCES_[STARTED\|NOTICE\|SUCCEEDED\|FAILED] |
+
+Where [subtype] can be one of `STARTED`, `NOTICE`, `SUCCEEDED` or `FAILED`.
+
+- All `STARTED` events include a `code` and `message`.
+- All `NOTICE` events include a `code` and `message`.
+- All `SUCCEEDED` events include a `code`, `message` and `duration`.
+- All `FAILED` events include a `code`, `message` and `err`.
+
+ You can write code to listen to for these events as follows:
 
 ```js
 const { Operations } = require("x-pool");
 const { CreateResourceOperation, XPoolEvent, XPoolError } = Operations;
 
-pool.on(CreateResourceOperation.SUCCEEDED, (event) =&gt; {
+pool.on(CreateResourceOperation.SUCCEEDED, ({ code, message, duration }) =&gt; {
   // Handle the Create Resource operation succeeded event in a specific way
 });
-pool.on(CreateResourceOperation.FAILED, (err) =&gt; {
+pool.on(CreateResourceOperation.FAILED, ({ code, message, err }) =&gt; {
   // Handle the Create Resource operation error event in a specific way
 });
-pool.on(XPoolError, (err) =&gt; {
-  // Handle all other error events in a general way
+pool.on(XPoolError, ({ code, message, err }) =&gt; {
+  // Handle all error events in a general way
 });
 pool.on(XPoolEvent, (event) =&gt; {
-  // Handle all other events in a general way
+  // Handle all events in a general way
 });
 ```
 
-The potential events are as follows:
+## Errors
+All errors rejectect or emitted by XPool have a code. If the error wraps a factory error, this will be available via the `cause` property. Potential errors are...
 
-| Event                                        | Notes                                                                 |
-| -------------------------------------------- | --------------------------------------------------------------------- |
-| ERR_X&#8209;POOL_ERROR                       | Only emitted if one of the following events is not explicitly handled |
-| ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED    | The factory yielded an error while creating a resource                |
-| ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED  | The factory yielded an error while validating a resource              |
-| ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED | The factory yielded an error while destroying a resource              |
-| ERR_X&#8209;POOL_OPERATION_TIMEDOUT          | The createResource timeout was exceeded while creating a resource     |
+| Error                     | Code                                         |
+| ------------------------- | -------------------------------------------- |
+| ConfigurationError        | ERR_X&#8209;POOL_CONFIGURATION_ERROR         |
+| OperationTimedout         | ERR_X&#8209;POOL_OPERATION_TIMEDOUT          |
+| OperationFailed           | ERR_X&#8209;POOL_OPERATION_FAILED            |
+| MaxQueueDepthExceeded     | ERR_X&#8209;POOL_MAX_QUEUE_DEPTH_EXCEEDED    |
+| ResourceCreationFailed    | ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED    |
+| ResourceValidationFailed  | ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED  |
+| ResourceDestructionFailed | ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED |
 
 ## Migrating from Generic Pool
 
@@ -294,19 +323,19 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### Events
 
-| Generic Pool            | X-Pool                                       | Notes                                       |
-| ----------------------- | -------------------------------------------- | ------------------------------------------- |
-| factoryCreateError      | ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED    | Use `Errors.ResourceCreationFailed.code`    |
-| factoryDestructionError | ERR_X&#8209;POOL_RESOURCE_DESTRUCTION_FAILED | Use `Errors.ResourceDestructionFailed.code` |
+| Generic Pool            | X-Pool                          |
+| ----------------------- | ------------------------------- |
+| factoryCreateError      | CreateResourceOperation.FAILED  |
+| factoryDestructionError | DestroyResourceOperation.FAILED |
 
 ### Pool Stats
 
-| Generic Pool          | X-Pool                                                                                             |
-| --------------------- | -------------------------------------------------------------------------------------------------- |
-| spareResourceCapacity | Math.max(0, options.maxSize - stats().queued - stats().acquiring - stats().acquired - stats().bad) |
-| size                  | stats().size                                                                                       |
-| available             | stats().idle                                                                                       |
-| borrowed              | stats().acquired                                                                                   |
-| pending               | stats().queued + stats().acquiring                                                                 |
-| max                   | options.maxSize                                                                                    |
-| min                   | optiosn.minSize                                                                                    |
+| Generic Pool          | X-Pool                       |
+| --------------------- | ---------------------------- |
+| spareResourceCapacity | Not exposed via pool.stats() |
+| size                  | size                         |
+| available             | idle                         |
+| borrowed              | acquired                     |
+| pending               | queued + acquiring           |
+| max                   | Not exposed via pool.stats() |
+| min                   | Not exposed via pool.stats() |
