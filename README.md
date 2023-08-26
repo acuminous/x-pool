@@ -319,7 +319,7 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 | use                | [with](#withresource--t--promise--promise)                                  |                                                                                                                                                                                                                            |
 | drain              | [shutdown](#shutdown--promisevoid)                                          |                                                                                                                                                                                                                            |
 | clear              | Not Supported                                                               | Not necessary with X-Pool                                                                                                                                                                                                  |
-| stats              | [stats](#stats--poolstats)                                                  | Not necessary with X-Pool                                                                                                                                                                                                  |
+| stats              | [stats](#stats--poolstats)                                                  | See [Pool stats](#pool-stats)                                                                                                                                                                                                                           |
 
 ### Events
 
