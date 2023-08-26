@@ -11,7 +11,7 @@ module.exports = class TestFactory {
     if (this._index >= this._resourceDefinitions.length) throw new Error('Test Factory has exhausted all resources');
     const rd = this._resourceDefinitions[this._index++];
     if (rd.createDelay) await scheduler.wait(rd.createDelay);
-    if (rd.createError) throw new Error(rd.createError);
+    if (rd.createError) throw rd.createError instanceof Error ? rd.createError : new Error(rd.createError);
     return rd.value;
   }
 

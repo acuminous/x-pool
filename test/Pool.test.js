@@ -1,9 +1,13 @@
-const { strictEqual: eq, ok, rejects, throws, fail } = require('node:assert');
+const { strictEqual: eq, ok, match, rejects, throws, fail } = require('node:assert', /blah/);
 const { scheduler } = require('node:timers/promises');
 const debug = require('debug')('x-pool');
 const { describe, it } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
-const { Pool, Operations: { XPoolEvent, ReleaseResourceOperation } } = require('../index');
+const {
+  Pool,
+  Operations: { XPoolEvent, CreateResourceOperation, ReleaseResourceOperation },
+  Errors: { XPoolError, ResourceCreationFailed },
+} = require('../index');
 
 describe('Pool', () => {
 
@@ -359,13 +363,35 @@ describe('Pool', () => {
       });
 
       it('should report resource creation errors via a specific event', async (t, done) => {
-        const resources = [{ createError: 'Oh Noes!' }, 'R2'];
+        const createError = new Error('Oh Noes!');
+        const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_CREATION_FAILED', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_CREATION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.once(CreateResourceOperation.FAILED, ({ code, message, err }) => {
+          eq(code, CreateResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error creating resource: Oh Noes!$/);
+          eq(err.code, ResourceCreationFailed.code);
+          match(err.message, /^Error creating resource: Oh Noes!$/);
+          eq(err.cause, createError);
+          done();
+        });
+
+        await pool.acquire();
+      });
+
+      it('should fallback to reporting resource creation errors via a general error event', async (t, done) => {
+        const createError = new Error('Oh Noes!');
+        const resources = [{ createError }, 'R2'];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        pool.once(XPoolError, ({ code, message, err }) => {
+          eq(code, CreateResourceOperation.FAILED);
+          match(message, /^\[\d+\] Error creating resource: Oh Noes!$/);
+          eq(err.code, ResourceCreationFailed.code);
+          match(err.message, /^Error creating resource: Oh Noes!$/);
+          eq(err.cause, createError);
           done();
         });
 
@@ -373,13 +399,17 @@ describe('Pool', () => {
       });
 
       it('should fallback to reporting resource creation errors via a general event', async (t, done) => {
-        const resources = [{ createError: 'Oh Noes!' }, 'R2'];
+        const createError = new Error('Oh Noes!');
+        const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_ERROR', (err) => {
-          eq(err.code, 'ERR_X-POOL_RESOURCE_CREATION_FAILED');
-          eq(err.cause.message, 'Oh Noes!');
+        pool.on(XPoolEvent, ({ code, message, err }) => {
+          if (code !== CreateResourceOperation.FAILED) return;
+          match(message, /^\[\d+\] Error creating resource: Oh Noes!$/);
+          eq(err.code, ResourceCreationFailed.code);
+          match(err.message, /^Error creating resource: Oh Noes!$/);
+          eq(err.cause, createError);
           done();
         });
 
