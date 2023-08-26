@@ -308,18 +308,69 @@ Migrating from [generic-pool](https://github.com/coopernurse/node-pool) is relat
 
 ### API
 
-| Generic Pool                                                                           | X-Pool                                                                                  | Notes                                                                                                                                                                                                                      |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| acquire(priority?&nbsp;:&nbsp;number)&nbsp;:&nbsp;Promise&lt;T&gt;                     | acquire()&nbsp;:&nbsp;Promise&lt;T&gt;                                                  | X-Pool does not currently support priorities                                                                                                                                                                               |
-| isBorrowedResource()&nbsp;:&nbsp;boolean                                               | Not Supported                                                                           | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
-| isBorrowedResource()&nbsp;:&nbsp;boolean                                               | Not Supported                                                                           | This method is not necessary since returning an unmanaged resource to the pool will have no effect                                                                                                                         |
-| release(resource&nbsp;:&nbsp;T) : Promise&lt;void&gt;                                  | release(resource&nbsp;:&nbsp;T)&nbsp;:&nbsp;void                                        | Releasing resources is a synchronous operation so there is no need to return a promise                                                                                                                                     |
-| destroy(resource&nbsp;:&nbsp;T)&nbsp;:&nbsp;Promise&lt;void&gt;                        | destroy(resource&nbsp;:&nbsp;T)&nbsp;:&nbsp;void                                        | Resources are destroyed in the background so there is no need for this method to return a promise                                                                                                                          |
-| start()&nbsp;:&nbsp;void                                                               | initialise()&nbsp;:&nbsp;Promise&lt;void&gt;                                            | Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to. |
-| ready()&nbsp;:&nbsp;void                                                               | Not Supported                                                                           | Await the initialise method instead.                                                                                                                                                                                       |
-| use((resource:&nbsp;T)&nbsp;=>&nbsp;Promise&lt;any&gt;)&nbsp;:&nbsp;Promise&lt;any&gt; | with((resource:&nbsp;T)&nbsp;=>&nbsp;Promise&lt;any&gt;)&nbsp;:&nbsp;Promise&lt;any&gt; | We will consider adding this feature if needed.                                                                                                                                                                            |
-| drain()&nbsp;:&nbsp;Promise&lt;void&gt;                                                | shutdown()&nbsp;:&nbsp;Promise&lt;void&gt;                                              |                                                                                                                                                                                                                            |
-| clear()&nbsp;:&nbsp;Promise&lt;void&gt; Not Supported                                  | Not Supported                                                                           | Not necessary with X-Pool                                                                                                                                                                                                  |
+| Generic Pool                                   | X-Pool                       |
+| ---------------------------------------------- | ---------------------------- |
+| acquire(priority? : number) : Promise&lt;T&gt; | acquire() : Promise&lt;T&gt; |
+
+X-Pool does not currently support priorities
+
+| Generic Pool                                   | X-Pool                       |
+| ---------------------------------------------- | ---------------------------- |
+| acquire(priority? : number) : Promise&lt;T&gt; | acquire() : Promise&lt;T&gt; |
+
+X-Pool does not currently support priorities
+
+| Generic Pool                                   | X-Pool                       |
+| ---------------------------------------------- | ---------------------------- |
+| acquire(priority? : number) : Promise&lt;T&gt; | acquire() : Promise&lt;T&gt; |
+
+X-Pool does not currently support priorities
+
+| Generic Pool                   | X-Pool        |
+| ------------------------------ | ------------- |
+| isBorrowedResource() : boolean | Not Supported |
+
+This method is not necessary since returning an unmanaged resource to the pool will have no effect
+
+| Generic Pool                                | X-Pool                       |
+| ------------------------------------------- | ---------------------------- |
+| release(resource : T) : Promise&lt;void&gt; | release(resource : T) : void |
+
+Releasing resources is a synchronous operation so there is no need to return a promise
+
+| Generic Pool                                | X-Pool                       |
+| ------------------------------------------- | ---------------------------- |
+| destroy(resource : T) : Promise&lt;void&gt; | destroy(resource : T) : void |
+
+Resources are destroyed in the background so there is no need for this method to return a promise
+
+| Generic Pool   | X-Pool                             |
+| -------------- | ---------------------------------- |
+| start() : void | initialise() : Promise&lt;void&gt; |
+
+Resolves once the minimum number of resources have been added to the pool, or rejects if the optional `initialiseTimeout` is exceeded. You do not need to wait for the initialise method to resolve if you do not want to.
+
+| Generic Pool   | X-Pool        |
+| -------------- | ------------- |
+| ready() : void | Not Supported |
+
+Await the initialise method or listen for the InitialisePoolOperation.SUCCEEDED event.
+
+| Generic Pool                                                  | X-Pool                                                         |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| use((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt; | with((resource: T) => Promise&lt;any&gt;) : Promise&lt;any&gt; |
+
+We will consider adding this feature if needed.
+
+| Generic Pool                  | X-Pool                           |
+| ----------------------------- | -------------------------------- |
+| drain() : Promise&lt;void&gt; | shutdown() : Promise&lt;void&gt; |
+
+| Generic Pool                                | X-Pool        |
+| ------------------------------------------- | ------------- |
+| clear() : Promise&lt;void&gt; Not Supported | Not Supported |
+
+Not necessary with X-Pool
 
 ### Events
 
