@@ -36,6 +36,7 @@ try {
   - [evictBadResources](#evictbadresources--void)
   - [stats](#stats--poolstats)
   - [shutdown](#shutdown--promisevoid)
+  - [kill](#shutdown--void)
 - [Resource Management](#resource-management)
 - [Events](#events)
 - [Errors](#errors)
