@@ -6,7 +6,7 @@ const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
   Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation, DestroyResourceOperation },
-  Errors: { XPoolError, ConfigurationError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout },
+  Errors: { XPoolError, ConfigurationError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout, MaxQueueDepthExceeded },
 } = require('../index');
 
 describe('Pool', () => {
@@ -359,7 +359,7 @@ describe('Pool', () => {
         const after = Date.now();
 
         eq(resource, 'R3');
-        ok(after - before >= 399, 'Did not wait sufficiently between resource creation attempts');
+        ok(after - before >= 399, `Only waited an average of ${(after - before) / 2}ms between resource creation attempts`);
       });
 
       it('should report resource creation errors via a specific event', async (t, done) => {
@@ -544,7 +544,7 @@ describe('Pool', () => {
         const resource2 = await pool.acquire();
         const after = Date.now();
 
-        ok(after - before >= 99, 'Pool was not temporarily blocked');
+        ok(after - before >= 99, `Only waited ${(after - before)}ms for the pool to unblock`);
         eq(resource2, 'R1');
       });
 
@@ -560,7 +560,7 @@ describe('Pool', () => {
         const resource2 = await pool.acquire();
         const after = Date.now();
 
-        ok(after - before >= 99, 'Pool was not temporarily blocked');
+        ok(after - before >= 99, `Only waited ${(after - before)}ms for the pool to unblock`);
         eq(resource2, 'R2');
       });
 
@@ -577,7 +577,7 @@ describe('Pool', () => {
         pool.acquire().catch(() => { });
 
         await rejects(() => pool.acquire(), (err) => {
-          eq(err.code, 'ERR_X-POOL_MAX_QUEUE_DEPTH_EXCEEDED');
+          eq(err.code, MaxQueueDepthExceeded.code);
           return true;
         });
       });
@@ -1133,7 +1133,7 @@ describe('Pool', () => {
           const before = Date.now();
           await pool.shutdown();
           const after = Date.now();
-          ok(after - before >= 399 - 200 + 200, 'Shutdown did not wait for pending acquitions');
+          ok(after - before >= 399 - 200 + 200, `Only waited ${(after - before)}ms for queued acquisitions to be honoured`);
           done();
         }, 200);
 
