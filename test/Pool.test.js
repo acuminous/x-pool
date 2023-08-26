@@ -6,7 +6,7 @@ const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
   Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation, DestroyResourceOperation },
-  Errors: { XPoolError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout },
+  Errors: { XPoolError, ConfigurationError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout },
 } = require('../index');
 
 describe('Pool', () => {
@@ -17,7 +17,7 @@ describe('Pool', () => {
 
       it('should require a factory', () => {
         throws(() => new Pool(), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'factory is a required option. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -26,7 +26,7 @@ describe('Pool', () => {
       it('should require a factory with a create method', () => {
         const factory = { create: true, validate: () => { }, destroy: () => { } };
         throws(() => new Pool({ factory }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The supplied factory is missing a create method. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -35,7 +35,7 @@ describe('Pool', () => {
       it('should require a factory with a validate method', () => {
         const factory = { create: () => { }, validate: true, destroy: () => { } };
         throws(() => new Pool({ factory }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The supplied factory is missing a validate method. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -44,7 +44,7 @@ describe('Pool', () => {
       it('should require a factory with a destroy method', () => {
         const factory = { create: () => { }, validate: () => { }, destroy: true };
         throws(() => new Pool({ factory }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The supplied factory is missing a destroy method. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -56,7 +56,7 @@ describe('Pool', () => {
       it('should require maxSize to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The maxSize option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -65,7 +65,7 @@ describe('Pool', () => {
       it('should require maxSize to be at least 1', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxSize: 0 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The maxSize option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -77,7 +77,7 @@ describe('Pool', () => {
       it('should require minSize to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The minSize option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -86,7 +86,7 @@ describe('Pool', () => {
       it('should require minSize to be at least 0', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: -1 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The minSize option must be at least 0. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -95,7 +95,7 @@ describe('Pool', () => {
       it('should require minSize to be less than or equal to maxSize', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, minSize: 10, maxSize: 9 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The minSize option must be less than or equal to maxSize. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -107,7 +107,7 @@ describe('Pool', () => {
       it('should require maxQueueDepth to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxQueueDepth: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The maxQueueDepth option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -116,7 +116,7 @@ describe('Pool', () => {
       it('should require maxQueueDepth to be at least 1', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, maxQueueDepth: 0 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The maxQueueDepth option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -128,7 +128,7 @@ describe('Pool', () => {
       it('should require an acquireTimeout', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'acquireTimeout is a required option. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -137,7 +137,7 @@ describe('Pool', () => {
       it('should require acquireTimeout to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The acquireTimeout option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -146,7 +146,7 @@ describe('Pool', () => {
       it('should require acquireTimeout to be at least 1ms', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 0 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The acquireTimeout option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -158,7 +158,7 @@ describe('Pool', () => {
       it('should require acquireRetryInterval to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, acquireRetryInterval: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The acquireRetryInterval option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -167,7 +167,7 @@ describe('Pool', () => {
       it('should require acquireRetryInterval to be at least 0ms', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, acquireRetryInterval: -1 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The acquireRetryInterval option must be at least 0. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -179,7 +179,7 @@ describe('Pool', () => {
       it('should require a destroyTimeout', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'destroyTimeout is a required option. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -188,7 +188,7 @@ describe('Pool', () => {
       it('should require destroyTimeout to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The destroyTimeout option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -197,7 +197,7 @@ describe('Pool', () => {
       it('should require destroyTimeout to be at least 1ms', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 0 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The destroyTimeout option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -209,7 +209,7 @@ describe('Pool', () => {
       it('should require shutdownTimeout to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, shutdownTimeout: false }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The shutdownTimeout option must be a number. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -218,7 +218,7 @@ describe('Pool', () => {
       it('should require shutdownTimeout to be at least 1ms', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, destroyTimeout: 1000, shutdownTimeout: 0 }), (err) => {
-          eq(err.code, 'ERR_X-POOL_CONFIGURATION_ERROR');
+          eq(err.code, ConfigurationError.code);
           eq(err.message, 'The shutdownTimeout option must be at least 1. Please read the documentation at https://acuminous.github.io/x-pool');
           return true;
         });
@@ -248,7 +248,7 @@ describe('Pool', () => {
         const pool = createPool({ factory, minSize: 5, initialiseTimeout: 100 });
 
         await rejects(() => pool.initialise(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          eq(err.code, OperationTimedout.code);
           return true;
         });
       });
@@ -422,7 +422,7 @@ describe('Pool', () => {
         const pool = createPool({ factory, acquireTimeout: 100 });
 
         await rejects(() => pool.acquire(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          eq(err.code, OperationTimedout.code);
           return true;
         });
       });
@@ -433,7 +433,7 @@ describe('Pool', () => {
         const pool = createPool({ factory, acquireTimeout: 100 });
 
         await rejects(() => pool.acquire(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          eq(err.code, OperationTimedout.code);
           return true;
         });
 
@@ -527,7 +527,7 @@ describe('Pool', () => {
         await pool.acquire();
 
         await rejects(() => pool.acquire(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          eq(err.code, OperationTimedout.code);
           return true;
         });
       });
@@ -1152,7 +1152,7 @@ describe('Pool', () => {
         await pool.acquire();
 
         await rejects(() => pool.shutdown(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_TIMEDOUT');
+          eq(err.code, OperationTimedout.code);
           return true;
         });
       });
