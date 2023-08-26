@@ -427,6 +427,7 @@ describe('Pool', () => {
         });
       });
 
+      // TODO CHECK POOL STATS ESPECIALLY acquiring
       it('should use valid resources yielded after the acquire timeout is exceeded', async () => {
         const resources = [{ createDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
@@ -511,10 +512,10 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        setTimeout(() => {
+        pool.once(DestroyResourceOperation.SUCCEEDED, () => {
           ok(factory.wasDestroyed('R1'), 'Resource was not destroyed');
           done();
-        }, 100);
+        });
 
         await pool.acquire();
       });
@@ -647,20 +648,21 @@ describe('Pool', () => {
 
     describe('destroy', () => {
 
-      it('should remove the supplied resource from the pool eventually', async () => {
+      it('should remove the supplied resource from the pool eventually', async (t, done) => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        const resource = await pool.acquire();
-        pool.destroy(resource);
-
-        setTimeout(() => {
+        pool.on(DestroyResourceOperation.SUCCEEDED, () => {
           const { size, acquired, idle } = pool.stats();
           eq(size, 0);
           eq(acquired, 0);
           eq(idle, 0);
-        }, 100);
+          done();
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
       });
 
       it('should destroy the supplied resource eventually', async (t, done) => {
@@ -825,16 +827,16 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, destroyTimeout: 100 });
 
-        const resource = await pool.acquire();
-        pool.destroy(resource);
-
-        setTimeout(() => {
+        pool.once(DestroyResourceOperation.NOTICE, () => {
           const { size, acquired, bad } = pool.stats();
           eq(size, 0);
           eq(acquired, 0);
           eq(bad, 0);
           done();
-        }, 300);
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
       });
     });
 
@@ -1082,7 +1084,7 @@ describe('Pool', () => {
         pool.destroy(resource);
       });
 
-      it('should wait for idle resources to be destroyed', async () => {
+      it('should destroy idle resources', async () => {
         const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, minSize: 5 });
@@ -1096,6 +1098,7 @@ describe('Pool', () => {
 
         eq(pool.stats().size, 0);
         eq(pool.stats().idle, 0);
+
       });
 
       it('should wait for acquired resources to be released and destroyed', async () => {
@@ -1124,11 +1127,10 @@ describe('Pool', () => {
         // Acquire the only resource
         const resource1 = await pool.acquire();
 
-        // Release the resource 200ms after it was acquired
+        // Release the resource 400ms after it was acquired
         setTimeout(() => pool.release(resource1), 400);
 
-        // Call shutdown while the resource is still on loan,
-        // but after the second acquire
+        // Call shutdown while the resource is still on loan but after the second acquire
         setTimeout(async () => {
           const before = Date.now();
           await pool.shutdown();
