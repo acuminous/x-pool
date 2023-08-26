@@ -202,6 +202,14 @@ await pool.shutdown();
 
 Shuts down the pool. After calling shutdown any inflight acquisition requests will be allowed to continue but new requests will be rejected. Once there are no inflight requests the remaining idle resources will be destroyed. The method blocks until all resources have been destroyed or until the shutdownTimeout expires. Calling shutdown repeatedly will yield an error.
 
+### kill() : void
+
+```js
+await pool.kill();
+```
+
+Intended to assist unit testing. Aggresively kills the pool - any queued or in progress acquisition requests will be immediately rejected. No resources will be destroyed. All event listeners will be removed.
+
 ## Resource Management
 
 ### Revalidation

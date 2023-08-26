@@ -1,7 +1,7 @@
 const { strictEqual: eq, ok, match, rejects, throws, fail } = require('node:assert', /blah/);
 const { scheduler } = require('node:timers/promises');
 const debug = require('debug')('x-pool');
-const { describe, it } = require('zunit');
+const { describe, it, afterEach } = require('zunit');
 const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
@@ -10,6 +10,14 @@ const {
 } = require('../index');
 
 describe('Pool', () => {
+
+  let pool;
+
+  afterEach(async () => {
+    if (!pool) return;
+    await pool.kill();
+    pool = null;
+  });
 
   describe('Configuration Options', () => {
 
@@ -62,10 +70,10 @@ describe('Pool', () => {
         });
       });
 
-      it('should initialise the pool when set', async (t, done) => {
+      it('should initialise the pool', async (t, done) => {
         const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 5, autoStart: true });
+        pool = createPool({ factory, minSize: 5, autoStart: true });
 
         pool.once(InitialisePoolOperation.SUCCEEDED, () => {
           const { size, idle } = pool.stats();
@@ -258,7 +266,7 @@ describe('Pool', () => {
       it('should block until the pool reaches the minimum size', async () => {
         const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 5 });
+        pool = createPool({ factory, minSize: 5 });
 
         await pool.initialise();
 
@@ -270,7 +278,7 @@ describe('Pool', () => {
       it('should reject when the initialiseTimeout is exceeded', async () => {
         const resources = [];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 5, initialiseTimeout: 100 });
+        pool = createPool({ factory, minSize: 5, initialiseTimeout: 100 });
 
         await rejects(() => pool.initialise(), (err) => {
           eq(err.code, OperationTimedout.code);
@@ -281,7 +289,7 @@ describe('Pool', () => {
       it('should tolerate repeat intialisation calls', async () => {
         const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 2 });
+        pool = createPool({ factory, minSize: 2 });
 
         await pool.initialise();
         await pool.acquire();
@@ -296,7 +304,7 @@ describe('Pool', () => {
       it('should not exceed max queue depth when initialising', async () => {
         const resources = new Array(100).fill().map((_, index) => ({ createDelay: 100, value: `R${index + 1}` }));
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 100, maxSize: 100, maxQueueDepth: 3, acquireTimeout: 1000 });
+        pool = createPool({ factory, minSize: 100, maxSize: 100, maxQueueDepth: 3, acquireTimeout: 1000 });
 
         await pool.initialise();
       });
@@ -307,7 +315,7 @@ describe('Pool', () => {
       it('should create a new resource when the pool is empty', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource = await pool.acquire();
 
@@ -317,7 +325,7 @@ describe('Pool', () => {
       it('should create a new resource when the pool contains no idle resources', async () => {
         const resources = ['R1', 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource1 = await pool.acquire();
         eq(resource1, 'R1');
@@ -329,7 +337,7 @@ describe('Pool', () => {
       it('should reuse an existing resource when the pool contains idle resources', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource1 = await pool.acquire();
         eq(resource1, 'R1');
@@ -342,7 +350,7 @@ describe('Pool', () => {
       it('should tolerate resource creation errors', async () => {
         const resources = [{ createError: 'Oh Noes!' }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource = await pool.acquire();
         eq(resource, 'R2');
@@ -351,7 +359,7 @@ describe('Pool', () => {
       it('should not attempt to validate after a creation error', async () => {
         const resources = [{ createError: 'Oh Noes!' }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(ValidateResourceOperation.FAILED, () => {
           fail('Attempted to validate a resource after creation failure');
@@ -364,7 +372,7 @@ describe('Pool', () => {
       it('should wait briefly between failed resource creation attempts', async () => {
         const resources = [{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, 'R3'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const before = Date.now();
         const resource = await pool.acquire();
@@ -377,7 +385,7 @@ describe('Pool', () => {
       it('should wait the specified time between resource creation attempts', async () => {
         const resources = [{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, 'R3'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, acquireRetryInterval: 200 });
+        pool = createPool({ factory, acquireRetryInterval: 200 });
 
         const before = Date.now();
         const resource = await pool.acquire();
@@ -391,7 +399,7 @@ describe('Pool', () => {
         const createError = new Error('Oh Noes!');
         const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(CreateResourceOperation.FAILED, ({ code, message, err }) => {
           eq(code, CreateResourceOperation.FAILED);
@@ -409,7 +417,7 @@ describe('Pool', () => {
         const createError = new Error('Oh Noes!');
         const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(XPoolError, ({ code, message, err }) => {
           eq(code, CreateResourceOperation.FAILED);
@@ -427,7 +435,7 @@ describe('Pool', () => {
         const createError = new Error('Oh Noes!');
         const resources = [{ createError }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.on(XPoolEvent, ({ code, message, err }) => {
           if (code !== CreateResourceOperation.FAILED) return;
@@ -444,7 +452,7 @@ describe('Pool', () => {
       it('should reject when the acquire timeout is exceeded', async () => {
         const resources = [{ createDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, acquireTimeout: 100 });
+        pool = createPool({ factory, acquireTimeout: 100 });
 
         await rejects(() => pool.acquire(), (err) => {
           eq(err.code, OperationTimedout.code);
@@ -455,7 +463,7 @@ describe('Pool', () => {
       it('should use valid resources yielded after the acquire timeout is exceeded', async () => {
         const resources = [{ createDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, acquireTimeout: 100 });
+        pool = createPool({ factory, acquireTimeout: 100 });
 
         await rejects(() => pool.acquire(), (err) => {
           eq(err.code, OperationTimedout.code);
@@ -475,7 +483,7 @@ describe('Pool', () => {
       it('should tolerate resource validation failure', async () => {
         const resources = [{ validateError: 'Oh Noes!' }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource = await pool.acquire();
         eq(resource, 'R2');
@@ -485,7 +493,7 @@ describe('Pool', () => {
         const validateError = new Error('Oh Noes!');
         const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(ValidateResourceOperation.FAILED, ({ code, message, err }) => {
           eq(code, ValidateResourceOperation.FAILED);
@@ -503,7 +511,7 @@ describe('Pool', () => {
         const validateError = new Error('Oh Noes!');
         const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(XPoolError, ({ code, message, err }) => {
           eq(code, ValidateResourceOperation.FAILED);
@@ -521,7 +529,7 @@ describe('Pool', () => {
         const validateError = new Error('Oh Noes!');
         const resources = [{ validateError }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.on(XPoolEvent, ({ code, message, err }) => {
           if (code !== ValidateResourceOperation.FAILED) return;
@@ -538,7 +546,7 @@ describe('Pool', () => {
       it('should destroy resources which failed validation', async (t, done) => {
         const resources = [{ validateError: 'Oh Noes!', value: 'R1' }, 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.SUCCEEDED, () => {
           ok(factory.wasDestroyed('R1'), 'Resource was not destroyed');
@@ -551,7 +559,7 @@ describe('Pool', () => {
       it('should block requests once the maximum pool size has been reached', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
+        pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
         await pool.acquire();
 
@@ -564,7 +572,7 @@ describe('Pool', () => {
       it('should unblock requests once a resource is released', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
+        pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
         const resource1 = await pool.acquire();
         setTimeout(() => pool.release(resource1), 100);
@@ -580,7 +588,7 @@ describe('Pool', () => {
       it('should unblock requests once a resource is destroyed', async () => {
         const resources = ['R1', 'R2'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
+        pool = createPool({ factory, acquireTimeout: 200, maxSize: 1 });
 
         const resource1 = await pool.acquire();
         setTimeout(() => pool.destroy(resource1), 100);
@@ -596,11 +604,11 @@ describe('Pool', () => {
       it('should honour max queue depth', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, maxSize: 1, maxQueueDepth: 3, acquireTimeout: 100 });
+        pool = createPool({ factory, maxSize: 1, maxQueueDepth: 3, acquireTimeout: 100 });
 
         await pool.acquire();
 
-        // The following acquisitions will timeout
+        // The following acquisitions will abort
         pool.acquire().catch(() => { });
         pool.acquire().catch(() => { });
         pool.acquire().catch(() => { });
@@ -617,7 +625,7 @@ describe('Pool', () => {
       it('should release the supplied resource', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource = await pool.acquire();
         pool.release(resource);
@@ -630,7 +638,7 @@ describe('Pool', () => {
 
       it('should tolerate releasing an unmanaged resource', async () => {
         const factory = new TestFactory();
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.release('XX');
 
@@ -645,7 +653,7 @@ describe('Pool', () => {
       it('should acquire a resource', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         await pool.with(async (resource) => {
           eq(resource, 'R1');
@@ -655,7 +663,7 @@ describe('Pool', () => {
       it('should yield the result', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const result = await pool.with(async () => 'ok');
 
@@ -665,7 +673,7 @@ describe('Pool', () => {
       it('should release resource', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         await pool.with(() => { });
 
@@ -679,7 +687,7 @@ describe('Pool', () => {
       it('should remove the supplied resource from the pool eventually', async (t, done) => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.on(DestroyResourceOperation.SUCCEEDED, () => {
           const { acquired, idle, destroying, size } = pool.stats();
@@ -697,7 +705,7 @@ describe('Pool', () => {
       it('should destroy the supplied resource eventually', async (t, done) => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource = await pool.acquire();
         pool.destroy(resource);
@@ -713,7 +721,7 @@ describe('Pool', () => {
         const destroyError = new Error('Oh Noes!');
         const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, ({ code, message, err }) => {
           eq(code, DestroyResourceOperation.FAILED);
@@ -732,7 +740,7 @@ describe('Pool', () => {
         const destroyError = new Error('Oh Noes!');
         const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(XPoolError, ({ code, message, err }) => {
           eq(code, DestroyResourceOperation.FAILED);
@@ -751,7 +759,7 @@ describe('Pool', () => {
         const destroyError = new Error('Oh Noes!');
         const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.on(XPoolEvent, ({ code, message, err }) => {
           if (code !== DestroyResourceOperation.FAILED) return;
@@ -769,7 +777,7 @@ describe('Pool', () => {
       it('should report resource destruction timeouts', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 100 });
+        pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.once(DestroyResourceOperation.FAILED, ({ code, message, err }) => {
           eq(code, DestroyResourceOperation.FAILED);
@@ -786,7 +794,7 @@ describe('Pool', () => {
       it('should report resource destruction timeouts via a general error event', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 100 });
+        pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.once(XPoolError, ({ code, message, err }) => {
           eq(code, DestroyResourceOperation.FAILED);
@@ -803,7 +811,7 @@ describe('Pool', () => {
       it('should report resource destruction timeouts via a general event', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 100 });
+        pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.on(XPoolEvent, ({ code, message, err }) => {
           if (code !== DestroyResourceOperation.FAILED) return;
@@ -820,7 +828,7 @@ describe('Pool', () => {
       it('should quaranteen resources that failed to be destroyed due to error', async (t, done) => {
         const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
           const { acquired, destroying, bad, size } = pool.stats();
@@ -838,7 +846,7 @@ describe('Pool', () => {
       it('should quaranteen resources that failed to be destroyed due to timeout', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 100 });
+        pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
           const { acquired, destroying, bad, size } = pool.stats();
@@ -856,7 +864,7 @@ describe('Pool', () => {
       it('should discard quaranteened resources that were destroyed after the timeout expired', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 100 });
+        pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.once(DestroyResourceOperation.NOTICE, () => {
           const { acquired, destroying, bad, size } = pool.stats();
@@ -877,7 +885,7 @@ describe('Pool', () => {
       it('should evict bad resources', async (t, done) => {
         const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, async () => {
           eq(pool.stats().bad, 1);
@@ -895,7 +903,7 @@ describe('Pool', () => {
 
       it('should report stats for an empty pool', () => {
         const factory = new TestFactory();
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
@@ -912,9 +920,9 @@ describe('Pool', () => {
       it('should report stats for a pool with acquired resources', async () => {
         const resources = ['R1', 'R2', 'R3'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
-        await acquireResources(pool, 3);
+        await acquireResources(3);
 
         const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
@@ -931,10 +939,10 @@ describe('Pool', () => {
       it('should report stats for a pool with idle resources', async () => {
         const resources = ['R1', 'R2', 'R3'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
-        const [resource1, resource2, resource3] = await acquireResources(pool, 3);
-        await releaseResources(pool, [resource1, resource2, resource3]);
+        const [resource1, resource2, resource3] = await acquireResources(3);
+        await releaseResources([resource1, resource2, resource3]);
 
         const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
@@ -951,11 +959,13 @@ describe('Pool', () => {
       it('should report stats for a pool with queued acquisition requests', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, maxSize: 1 });
+        pool = createPool({ factory, maxSize: 1 });
 
         await pool.acquire();
-        pool.acquire();
-        pool.acquire();
+
+        // The following acquisitions will abort
+        pool.acquire().catch(() => {});
+        pool.acquire().catch(() => {});
 
         const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 2);
@@ -972,9 +982,9 @@ describe('Pool', () => {
       it('should report stats for a pool with destroying resources', async (t, done) => {
         const resources = [{ destroyDelay: 200, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
-        pool.once(DestroyResourceOperation.STARTED, () => {
+        setTimeout(() => {
           const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
@@ -986,7 +996,7 @@ describe('Pool', () => {
           eq(available, Infinity);
           eq(peak, 1);
           done();
-        });
+        }, 100);
 
         const resource = await pool.acquire();
         pool.destroy(resource);
@@ -995,7 +1005,7 @@ describe('Pool', () => {
       it('should report stats for a pool with bad resources', async (t, done) => {
         const resources = ['R1', { destroyError: 'Oh Noes!', value: 'R2' }, 'R3'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
           const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
@@ -1011,14 +1021,14 @@ describe('Pool', () => {
           done();
         });
 
-        const [resource1, resource2, resource3] = await acquireResources(pool, 3);
-        await destroyResources(pool, [resource1, resource2, resource3]);
+        const [resource1, resource2, resource3] = await acquireResources(3);
+        await destroyResources([resource1, resource2, resource3]);
       });
 
       it('should report stats for a pool with a mixture of resource states', async (t, done) => {
         const resources = ['R1', 'R2', { destroyDelay: 200, value: 'R3' }, { destroyError: 'Oh Noes!', value: 'R4' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
           const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
@@ -1034,7 +1044,7 @@ describe('Pool', () => {
           done();
         });
 
-        const [, resource2, resource3, resource4] = await acquireResources(pool, 4);
+        const [, resource2, resource3, resource4] = await acquireResources(4);
         pool.release(resource2);
         pool.destroy(resource3);
         pool.destroy(resource4);
@@ -1043,7 +1053,7 @@ describe('Pool', () => {
       it('should report stats for a pool with a mixture of resource states and a maximum pool size', async (t, done) => {
         const resources = ['R1', 'R2', { destroyDelay: 200, value: 'R3' }, { destroyError: 'Oh Noes!', value: 'R4' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, maxSize: 10 });
+        pool = createPool({ factory, maxSize: 10 });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
           const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
@@ -1059,7 +1069,7 @@ describe('Pool', () => {
           done();
         });
 
-        const [, resource2, resource3, resource4] = await acquireResources(pool, 4);
+        const [, resource2, resource3, resource4] = await acquireResources(4);
         pool.release(resource2);
         pool.destroy(resource3);
         pool.destroy(resource4);
@@ -1068,10 +1078,10 @@ describe('Pool', () => {
       it('should report the peak pool size', async () => {
         const resources = ['R1', 'R2', 'R3'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
-        const [resource1, resource2, resource3] = await acquireResources(pool, 3);
-        await destroyResources(pool, [resource1, resource2, resource3]);
+        const [resource1, resource2, resource3] = await acquireResources(3);
+        await destroyResources([resource1, resource2, resource3]);
 
         const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
@@ -1090,39 +1100,39 @@ describe('Pool', () => {
 
       it('should reject repeat shutdown requests', async () => {
         const factory = new TestFactory();
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         await pool.shutdown();
 
         await rejects(() => pool.shutdown(), (err) => {
           eq(err.code, PoolNotRunning.code);
-          eq(err.message, 'The pool has been shutdown');
+          eq(err.message, 'The pool is not running');
           return true;
         });
       });
 
       it('should reject new acquisition requests', async () => {
         const factory = new TestFactory();
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         await pool.shutdown();
 
         await rejects(() => pool.acquire(), (err) => {
           eq(err.code, PoolNotRunning.code);
-          eq(err.message, 'The pool has been shutdown');
+          eq(err.message, 'The pool is not running');
           return true;
         });
       });
 
       it('should reject initialisation requests', async () => {
         const factory = new TestFactory();
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         await pool.shutdown();
 
         await rejects(() => pool.initialise(), (err) => {
           eq(err.code, PoolNotRunning.code);
-          eq(err.message, 'The pool has been shutdown');
+          eq(err.message, 'The pool is not running');
           return true;
         });
       });
@@ -1130,7 +1140,7 @@ describe('Pool', () => {
       it('should evict bad resources', async (t, done) => {
         const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 1 });
+        pool = createPool({ factory, minSize: 1 });
 
         const resource = await pool.acquire();
 
@@ -1152,7 +1162,7 @@ describe('Pool', () => {
       it('should destroy idle resources', async () => {
         const resources = ['R1', 'R2', 'R3', 'R4', 'R5'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 5 });
+        pool = createPool({ factory, minSize: 5 });
 
         await pool.initialise();
 
@@ -1169,7 +1179,7 @@ describe('Pool', () => {
       it('should wait for acquired resources to be released and destroyed', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory });
+        pool = createPool({ factory });
 
         const resource = await pool.acquire();
 
@@ -1187,7 +1197,7 @@ describe('Pool', () => {
       it('should wait for queued acquisitions to be honoured', async (t, done) => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, maxSize: 1 });
+        pool = createPool({ factory, maxSize: 1 });
 
         // Acquire the only resource
         const resource1 = await pool.acquire();
@@ -1214,7 +1224,7 @@ describe('Pool', () => {
       it('should reject when the shutdownTimeout is exceeded', async () => {
         const resources = ['R1'];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, destroyTimeout: 200 });
+        pool = createPool({ factory, destroyTimeout: 200 });
 
         await pool.acquire();
 
@@ -1227,7 +1237,7 @@ describe('Pool', () => {
       it('should tolerate resource destruction errors', async () => {
         const resources = [{ destroyError: 'Oh Noes!', value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 1, destroyTimeout: 1000 });
+        pool = createPool({ factory, minSize: 1, destroyTimeout: 1000 });
 
         await pool.initialise();
 
@@ -1238,7 +1248,7 @@ describe('Pool', () => {
         const destroyError = new Error('Oh Noes!');
         const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 1 });
+        pool = createPool({ factory, minSize: 1 });
 
         await pool.initialise();
 
@@ -1258,7 +1268,7 @@ describe('Pool', () => {
         const destroyError = new Error('Oh Noes!');
         const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 1 });
+        pool = createPool({ factory, minSize: 1 });
 
         await pool.initialise();
 
@@ -1278,7 +1288,7 @@ describe('Pool', () => {
         const destroyError = new Error('Oh Noes!');
         const resources = [{ destroyError, value: 'R1' }];
         const factory = new TestFactory(resources);
-        const pool = createPool({ factory, minSize: 1 });
+        pool = createPool({ factory, minSize: 1 });
 
         await pool.initialise();
 
@@ -1316,30 +1326,28 @@ describe('Pool', () => {
       });
     });
   });
+
+  function createPool({ factory, autoStart, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
+    return new Pool({ factory, autoStart, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout }).on(XPoolEvent, ({ message }) => {
+      debug(message);
+    });
+  }
+
+  function acquireResources(count) {
+    return Promise.all(new Array(count).fill().map(() => pool.acquire()));
+  }
+
+  function releaseResources(resources) {
+    return Promise.all(resources.map((r) => new Promise((resolve) => {
+      pool.once(ReleaseResourceOperation.SUCCEEDED, resolve);
+      pool.release(r);
+    })));
+  }
+
+  function destroyResources(resources) {
+    return Promise.all(resources.map((r) => new Promise((resolve) => {
+      pool.once(DestroyResourceOperation.SUCCEEDED, resolve);
+      pool.destroy(r);
+    })));
+  }
 });
-
-function createPool({ factory, autoStart, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout = 1000, acquireRetryInterval, destroyTimeout = 1000 }) {
-  const pool = new Pool({ factory, autoStart, minSize, maxSize, maxQueueDepth, initialiseTimeout, acquireTimeout, acquireRetryInterval, destroyTimeout });
-  pool.on(XPoolEvent, ({ message }) => {
-    debug(message);
-  });
-  return pool;
-}
-
-function acquireResources(pool, count) {
-  return Promise.all(new Array(count).fill().map(() => pool.acquire()));
-}
-
-function releaseResources(pool, resources) {
-  return Promise.all(resources.map((r) => new Promise((resolve) => {
-    pool.once(ReleaseResourceOperation.SUCCEEDED, resolve);
-    pool.release(r);
-  })));
-}
-
-function destroyResources(pool, resources) {
-  return Promise.all(resources.map((r) => new Promise((resolve) => {
-    pool.once(DestroyResourceOperation.SUCCEEDED, resolve);
-    pool.destroy(r);
-  })));
-}
