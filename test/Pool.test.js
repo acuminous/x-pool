@@ -6,7 +6,7 @@ const TestFactory = require('./lib/TestFactory');
 const {
   Pool,
   Operations: { XPoolEvent, CreateResourceOperation, ValidateResourceOperation, ReleaseResourceOperation, DestroyResourceOperation },
-  Errors: { XPoolError, ConfigurationError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout, MaxQueueDepthExceeded },
+  Errors: { XPoolError, ConfigurationError, ResourceCreationFailed, ResourceValidationFailed, ResourceDestructionFailed, OperationTimedout, PoolNotRunning, MaxQueueDepthExceeded },
 } = require('../index');
 
 describe('Pool', () => {
@@ -328,7 +328,7 @@ describe('Pool', () => {
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
-        pool.once('ERR_X-POOL_RESOURCE_VALIDATION_FAILED', () => {
+        pool.once(ValidateResourceOperation.FAILED, () => {
           fail('Attempted to validate a resource after creation failure');
         });
 
@@ -1030,7 +1030,7 @@ describe('Pool', () => {
         await pool.shutdown();
 
         await rejects(() => pool.shutdown(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_FAILED');
+          eq(err.code, PoolNotRunning.code);
           eq(err.message, 'The pool has been shutdown');
           return true;
         });
@@ -1043,7 +1043,7 @@ describe('Pool', () => {
         await pool.shutdown();
 
         await rejects(() => pool.acquire(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_FAILED');
+          eq(err.code, PoolNotRunning.code);
           eq(err.message, 'The pool has been shutdown');
           return true;
         });
@@ -1056,7 +1056,7 @@ describe('Pool', () => {
         await pool.shutdown();
 
         await rejects(() => pool.initialise(), (err) => {
-          eq(err.code, 'ERR_X-POOL_OPERATION_FAILED');
+          eq(err.code, PoolNotRunning.code);
           eq(err.message, 'The pool has been shutdown');
           return true;
         });

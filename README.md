@@ -129,7 +129,7 @@ There are equally strong arguments to re-issue the most recently used reosurce a
 | Code                                      | Notes                                                                       |
 | ----------------------------------------- | --------------------------------------------------------------------------- |
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT       | The acquire timeout was exceeded                                            |
-| ERR_X&#8209;POOL_OPERATION_FAILED         | The resource could not be acquired (e.g. because the pool is shutting down) |
+| ERR_X&#8209;POOL_NOT_RUNNING              | The resource could not be acquired (e.g. because the pool is shutting down) |
 | ERR_X&#8209;POOL_MAX_QUEUE_DEPTH_EXCEEDED | The maximum acquire queue depth was exceeded                                |
 
 ### release(resource: T) : void
@@ -155,7 +155,7 @@ Acquires a resource, passes it to the supplied function, and releases it when th
 | Code                                | Notes                                                                       |
 | ----------------------------------- | --------------------------------------------------------------------------- |
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded                                            |
-| ERR_X&#8209;POOL_OPERATION_FAILED   | The resource could not be acquired (e.g. because the pool is shutting down) |
+| ERR_X&#8209;POOL_NOT_RUNNING        | The resource could not be acquired (e.g. because the pool is shutting down) |
 
 ### destroy() : void
 
@@ -221,7 +221,7 @@ You can configure the pool to shrink back to the `minSize` when it is not busy b
 | Code                                | Notes                                                                                          |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------- |
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The `shutdownTimeout` was exceeded                                                             |
-| ERR_X&#8209;POOL_OPERATION_FAILED   | The pool could not be shutdown, possibly because it is already in the process of shutting down |
+| ERR_X&#8209;POOL_NOT_RUNNING        | The pool could not be shutdown, possibly because it is already in the process of shutting down |
 
 ## Events
 
@@ -277,7 +277,7 @@ All errors rejectect or emitted by XPool have a code. If the error wraps a facto
 | ------------------------- | -------------------------------------------- |
 | ConfigurationError        | ERR_X&#8209;POOL_CONFIGURATION_ERROR         |
 | OperationTimedout         | ERR_X&#8209;POOL_OPERATION_TIMEDOUT          |
-| OperationFailed           | ERR_X&#8209;POOL_OPERATION_FAILED            |
+| PoolNotRunning            | ERR_X&#8209;POOL_NOT_RUNNING                 |
 | MaxQueueDepthExceeded     | ERR_X&#8209;POOL_MAX_QUEUE_DEPTH_EXCEEDED    |
 | ResourceCreationFailed    | ERR_X&#8209;POOL_RESOURCE_CREATION_FAILED    |
 | ResourceValidationFailed  | ERR_X&#8209;POOL_RESOURCE_VALIDATION_FAILED  |
