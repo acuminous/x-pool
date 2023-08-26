@@ -228,22 +228,22 @@ You can configure the pool to shrink back to the `minSize` when it is not busy b
 X-Pool uses the NodeJS EventEmitter to expose information about the pool internals. Each high level operation, e.g. initialise, acquire, release, etc. has a corresponding Operation class. When the operation runs, the Pool will emit events corresponding to the start of the operation, the success of the operation or the failure of the operation.
 Some operations may emit additional events signifying an important state change within the pool. The potential events are as follows:
 
-| Event                                   | Code                                                                      |
-| --------------------------------------- | ------------------------------------------------------------------------- |
-| XPoolEvent                              | N/A the class is emitted                                                  |
-| XPoolOperation                          | N/A the class is emitted                                                  |
-| InitialisePoolOperation[subtype]        | X&#8209;POOL_INITIALISE_POOL_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]         |
-| ShutdownPoolOperation[subtype]          | X&#8209;POOL_SHUTDOWN_POOL_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]           |
-| AcquireResourceOperation[subtype]       | X&#8209;POOL_ACQUIRE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]        |
-| CreateResourceOperation[subtype]        | X&#8209;POOL_CREATE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]         |
-| ValidateResourceOperation[subtype]      | X&#8209;POOL_VALIDATE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]       |
-| ReleaseResourceOperation[subtype]       | X&#8209;POOL_RELEASE_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]        |
-| WithResourceOperation[subtype]          | X&#8209;POOL_WITH_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]           |
-| DestroyResourceOperation[subtype]       | X&#8209;POOL_DESTROY_RESOURCE_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]        |
-| EvictBadResourcesOperation[subtype]     | X&#8209;POOL_EVICT_BAD_RESOURCES_[STARTED\|NOTICE\|SUCCEEDED\|FAILED]     |
-| DestroySpareResourcesOperation[subtype] | X&#8209;POOL_DESTROY_SPARE_RESOURCES_[STARTED\|NOTICE\|SUCCEEDED\|FAILED] |
+| Event                                  | Code                                         |
+| -------------------------------------- | -------------------------------------------- |
+| XPoolEvent                             | N/A the class is emitted                     |
+| XPoolOperation                         | N/A the class is emitted                     |
+| InitialisePoolOperation.${TYPE}        | X&#8209;POOL_INITIALISE_POOL_${TYPE}         |
+| ShutdownPoolOperation.${TYPE}          | X&#8209;POOL_SHUTDOWN_POOL_${TYPE}           |
+| AcquireResourceOperation.${TYPE}       | X&#8209;POOL_ACQUIRE_RESOURCE_${TYPE}        |
+| CreateResourceOperation.${TYPE}        | X&#8209;POOL_CREATE_RESOURCE_${TYPE}         |
+| ValidateResourceOperation.${TYPE}      | X&#8209;POOL_VALIDATE_RESOURCE_${TYPE}       |
+| ReleaseResourceOperation.${TYPE}       | X&#8209;POOL_RELEASE_RESOURCE_${TYPE}        |
+| WithResourceOperation.${TYPE}          | X&#8209;POOL_WITH_RESOURCE_${TYPE}           |
+| DestroyResourceOperation.${TYPE}       | X&#8209;POOL_DESTROY_RESOURCE_${TYPE}        |
+| EvictBadResourcesOperation.${TYPE}     | X&#8209;POOL_EVICT_BAD_RESOURCES_${TYPE}     |
+| DestroySpareResourcesOperation.${TYPE} | X&#8209;POOL_DESTROY_SPARE_RESOURCES_${TYPE} |
 
-Where [subtype] can be one of `STARTED`, `NOTICE`, `SUCCEEDED` or `FAILED`.
+Where TYPE can be one of `STARTED`, `NOTICE`, `SUCCEEDED` or `FAILED`.
 
 - All `STARTED` events include a `code` and `message`.
 - All `NOTICE` events include a `code` and `message`.
