@@ -682,10 +682,11 @@ describe('Pool', () => {
         const pool = createPool({ factory });
 
         pool.on(DestroyResourceOperation.SUCCEEDED, () => {
-          const { size, acquired, idle } = pool.stats();
-          eq(size, 0);
+          const { acquired, idle, destroying, size } = pool.stats();
           eq(acquired, 0);
           eq(idle, 0);
+          eq(destroying, 0);
+          eq(size, 0);
           done();
         });
 
@@ -822,10 +823,11 @@ describe('Pool', () => {
         const pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
-          const { size, acquired, bad } = pool.stats();
-          eq(size, 1);
+          const { acquired, destroying, bad, size } = pool.stats();
           eq(acquired, 0);
+          eq(destroying, 0);
           eq(bad, 1);
+          eq(size, 1);
           done();
         });
 
@@ -839,10 +841,11 @@ describe('Pool', () => {
         const pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
-          const { size, acquired, bad } = pool.stats();
-          eq(size, 1);
+          const { acquired, destroying, bad, size } = pool.stats();
           eq(acquired, 0);
+          eq(destroying, 0);
           eq(bad, 1);
+          eq(size, 1);
           done();
         });
 
@@ -856,10 +859,11 @@ describe('Pool', () => {
         const pool = createPool({ factory, destroyTimeout: 100 });
 
         pool.once(DestroyResourceOperation.NOTICE, () => {
-          const { size, acquired, bad } = pool.stats();
-          eq(size, 0);
+          const { acquired, destroying, bad, size } = pool.stats();
           eq(acquired, 0);
+          eq(destroying, 0);
           eq(bad, 0);
+          eq(size, 0);
           done();
         });
 
@@ -893,11 +897,12 @@ describe('Pool', () => {
         const factory = new TestFactory();
         const pool = createPool({ factory });
 
-        const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+        const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
         eq(acquiring, 0);
         eq(acquired, 0);
         eq(idle, 0);
+        eq(destroying, 0);
         eq(bad, 0);
         eq(size, 0);
         eq(available, Infinity);
@@ -911,11 +916,12 @@ describe('Pool', () => {
 
         await acquireResources(pool, 3);
 
-        const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+        const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
         eq(acquiring, 0);
         eq(acquired, 3);
         eq(idle, 0);
+        eq(destroying, 0);
         eq(bad, 0);
         eq(size, 3);
         eq(available, Infinity);
@@ -930,11 +936,12 @@ describe('Pool', () => {
         const [resource1, resource2, resource3] = await acquireResources(pool, 3);
         await releaseResources(pool, [resource1, resource2, resource3]);
 
-        const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+        const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
         eq(acquiring, 0);
         eq(acquired, 0);
         eq(idle, 3);
+        eq(destroying, 0);
         eq(bad, 0);
         eq(size, 3);
         eq(available, Infinity);
@@ -950,15 +957,39 @@ describe('Pool', () => {
         pool.acquire();
         pool.acquire();
 
-        const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+        const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 2);
         eq(acquiring, 0);
         eq(acquired, 1);
         eq(idle, 0);
+        eq(destroying, 0);
         eq(bad, 0);
         eq(size, 1);
         eq(available, 0);
         eq(peak, 1);
+      });
+
+      it('should report stats for a pool with destroying resources', async (t, done) => {
+        const resources = [{ destroyDelay: 200, value: 'R1' }];
+        const factory = new TestFactory(resources);
+        const pool = createPool({ factory });
+
+        pool.once(DestroyResourceOperation.STARTED, () => {
+          const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
+          eq(queued, 0);
+          eq(acquiring, 0);
+          eq(acquired, 0);
+          eq(idle, 0);
+          eq(destroying, 1);
+          eq(bad, 0);
+          eq(size, 1);
+          eq(available, Infinity);
+          eq(peak, 1);
+          done();
+        });
+
+        const resource = await pool.acquire();
+        pool.destroy(resource);
       });
 
       it('should report stats for a pool with bad resources', async (t, done) => {
@@ -967,11 +998,12 @@ describe('Pool', () => {
         const pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
-          const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+          const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
           eq(acquired, 0);
           eq(idle, 0);
+          eq(destroying, 0);
           eq(bad, 1);
           eq(size, 1);
           eq(available, Infinity);
@@ -984,49 +1016,53 @@ describe('Pool', () => {
       });
 
       it('should report stats for a pool with a mixture of resource states', async (t, done) => {
-        const resources = ['R1', 'R2', { destroyError: 'Oh Noes!', value: 'R3' }];
+        const resources = ['R1', 'R2', { destroyDelay: 200, value: 'R3' }, { destroyError: 'Oh Noes!', value: 'R4' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
-          const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+          const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
           eq(acquired, 1);
           eq(idle, 1);
+          eq(destroying, 1);
           eq(bad, 1);
-          eq(size, 3);
+          eq(size, 4);
           eq(available, Infinity);
-          eq(peak, 3);
+          eq(peak, 4);
           done();
         });
 
-        const [, resource2, resource3] = await acquireResources(pool, 3);
+        const [, resource2, resource3, resource4] = await acquireResources(pool, 4);
         pool.release(resource2);
         pool.destroy(resource3);
+        pool.destroy(resource4);
       });
 
       it('should report stats for a pool with a mixture of resource states and a maximum pool size', async (t, done) => {
-        const resources = ['R1', 'R2', { destroyError: 'Oh Noes!', value: 'R3' }];
+        const resources = ['R1', 'R2', { destroyDelay: 200, value: 'R3' }, { destroyError: 'Oh Noes!', value: 'R4' }];
         const factory = new TestFactory(resources);
         const pool = createPool({ factory, maxSize: 10 });
 
         pool.once(DestroyResourceOperation.FAILED, () => {
-          const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+          const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
           eq(queued, 0);
           eq(acquiring, 0);
           eq(acquired, 1);
           eq(idle, 1);
+          eq(destroying, 1);
           eq(bad, 1);
-          eq(size, 3);
-          eq(available, 8);
-          eq(peak, 3);
+          eq(size, 4);
+          eq(available, 7);
+          eq(peak, 4);
           done();
         });
 
-        const [, resource2, resource3] = await acquireResources(pool, 3);
+        const [, resource2, resource3, resource4] = await acquireResources(pool, 4);
         pool.release(resource2);
         pool.destroy(resource3);
+        pool.destroy(resource4);
       });
 
       it('should report the peak pool size', async () => {
@@ -1037,11 +1073,12 @@ describe('Pool', () => {
         const [resource1, resource2, resource3] = await acquireResources(pool, 3);
         await destroyResources(pool, [resource1, resource2, resource3]);
 
-        const { queued, acquiring, acquired, idle, bad, size, available, peak } = pool.stats();
+        const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
         eq(queued, 0);
         eq(acquiring, 0);
         eq(acquired, 0);
         eq(idle, 0);
+        eq(destroying, 0);
         eq(bad, 0);
         eq(size, 0);
         eq(peak, 3);
