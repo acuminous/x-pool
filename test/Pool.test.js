@@ -187,7 +187,6 @@ describe('Pool', () => {
     });
 
     describe('acquireRetryInterval', () => {
-
       it('should require acquireRetryInterval to be a number', () => {
         const factory = new TestFactory();
         throws(() => new Pool({ factory, acquireTimeout: 1000, acquireRetryInterval: false }), (err) => {
@@ -543,7 +542,7 @@ describe('Pool', () => {
         await pool.acquire();
       });
 
-      it('should destroy resources which failed validation', async (t, done) => {
+      it('should destroy resources that fail validation', async (t, done) => {
         const resources = [{ validateError: 'Oh Noes!', value: 'R1' }, 'R2'];
         const factory = new TestFactory(resources);
         pool = createPool({ factory });

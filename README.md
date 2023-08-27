@@ -168,7 +168,7 @@ Acquires a resource, passes it to the supplied function, and releases it when th
 | ERR_X&#8209;POOL_OPERATION_TIMEDOUT | The acquire timeout was exceeded                                            |
 | ERR_X&#8209;POOL_NOT_RUNNING        | The resource could not be acquired (e.g. because the pool is shutting down) |
 
-### destroy() : void
+### destroy(resource: T) : void
 
 ```js
 pool.destroy(resource);
