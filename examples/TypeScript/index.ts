@@ -1,13 +1,17 @@
 import { scheduler } from "node:timers/promises";
-import { Pool, Errors } from "../../";
+import { Pool, Operations } from "../../";
 import ExampleFactory from "./ExampleFactory";
 
 (async () => {
   const pool = new Pool({ factory: new ExampleFactory(), maxSize: 2, acquireTimeout: 500, destroyTimeout: 500 });
   let running = true;
 
-  pool.on(Errors.XPoolError.code, (err) => {
-    console.error(err);
+  pool.on(Operations.DestroyResourceOperation.FAILED, () => {
+    pool.evictBadResources();
+  }).on("X-POOL_EVENT", ({ code, message, err }) => {
+    if (err) console.log(code, message, err);
+    else console.log(code, message);
+    console.log(pool.stats());
   });
 
   process.once('SIGINT', async () => {

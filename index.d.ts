@@ -41,6 +41,27 @@ export type PoolStats = {
   peak: number
 }
 
+export namespace Operations {
+  class XPoolEvent {}
+  class XPoolOperation {
+    static STARTED: string;
+    static NOTICE: string;
+    static SUCCEEDED: string;
+    static FAILED: string;
+  }
+  class InitialisePoolOperation extends XPoolOperation {}
+  class ShutdownPoolOperation extends XPoolOperation {}
+  class KillPoolOperation extends XPoolOperation {}
+  class AcquireResourceOperation extends XPoolOperation {}
+  class CreateResourceOperation extends XPoolOperation {}
+  class ValidateResourceOperation extends XPoolOperation {}
+  class ReleaseResourceOperation extends XPoolOperation {}
+  class WithResourceOperation extends XPoolOperation {}
+  class DestroyResourceOperation extends XPoolOperation {}
+  class EvictBadResourcesOperation extends XPoolOperation {}
+  class DestroySpareResourcesOperation extends XPoolOperation {}
+}
+
 export namespace Errors {
   class XPoolError extends Error {
     static code: string;
