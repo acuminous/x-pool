@@ -123,7 +123,7 @@ module.exports = class DatabaseFactory {
 const resource = await pool.initialise();
 ```
 
-Initialisise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded. You do not need to wait for the pool to initialise, however it is recommented you do so as to ensure your factory is correctly configured and has access to the required systems.
+Initialise the pool, only yielding after the minimum number of resources have been created or if the initialiseTimeout is exceeded. You do not need to wait for the pool to initialise, however it is recommented you do so as to ensure your factory is correctly configured and has access to the required systems.
 
 ### acquire() : Promise&lt;T&gt;
 
