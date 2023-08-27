@@ -15,7 +15,7 @@ const factory = new CustomResourceFactory();
 const pool = new Pool({ factory, acquireTimeout: 5000, destroyTimeout: 5000 });
 
 pool.on(DestroyResourceOperation.FAILED, () => {
-  pool.eviceBadResources();
+  pool.evictBadResources();
 }).on(XPoolEvent, ({ code, message }) => {
   console.log(code, message, pool.stats());
 });
