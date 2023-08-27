@@ -15,8 +15,8 @@ const CustomResourceFactory = require("./CustomResourceFactory");
 const factory = new CustomResourceFactory();
 const pool = new Pool({ factory, acquireTimeout: 5000, destroyTimeout: 5000 });
 
-// Recommended since it prevents bad resources gradually filling up your pool allocation / leaking memory
-// However, could also lead to exceeding the maxSize configuration option
+// Recommended since it prevents bad resources gradually filling up your pool allocation / leaking memory.
+// However, could also lead to creating more resources than allowed by the maxSize configuration option,
 pool.on(DestroyResourceOperation.FAILED, () => {
   pool.evictBadResources();
 });
