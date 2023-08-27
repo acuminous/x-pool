@@ -212,7 +212,7 @@ Shuts down the pool. After calling shutdown any inflight acquisition requests wi
 ### kill() : void
 
 ```js
-await pool.kill();
+pool.kill();
 ```
 
 Intended to assist unit testing. Aggresively kills the pool - any queued or in progress acquisition requests will be immediately rejected. No resources will be destroyed. All event listeners will be removed.
