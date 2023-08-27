@@ -26,6 +26,8 @@ try {
 } finally {
   pool.release(resource);
 }
+
+await pool.shutdown();
 ```
 
 ## Index
