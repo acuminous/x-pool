@@ -131,7 +131,7 @@ Initialise the pool, only yielding after the minimum number of resources have be
 const resource = await pool.acquire();
 ```
 
-Acquires and validates a resource from the pool, creating one if necessary as long as the optional maximum pool size has not been reached. If the create or validate fails acquition will be retried after the `acquireRetryInterval`. If the pool is exhausted this method will block until a resource becomes available or the `acquireTimeout` is exceeded. If the `acquireTimeout` is exceed the method will reject. Resources created after the timeout is exceeded will be added to the pool, unless it is already at capacity, in which case they will be destroyed.
+Acquires and validates a resource from the pool, creating one if necessary as long as the optional maximum pool size has not been reached. If the create or validate fails acquisition will be retried after the `acquireRetryInterval`. If the pool is exhausted this method will block until a resource becomes available or the `acquireTimeout` is exceeded. If the `acquireTimeout` is exceed the method will reject. Resources created after the timeout is exceeded will be added to the pool, unless it is already at capacity, in which case they will be destroyed.
 
 There are equally strong arguments to re-issue the most recently used reosurce as as the least recently used. X-Pool deliberately offers no guarantees of the order in which idle resources are re-issued. Instead provides the option of keeping the resources warm by revalidating idle resources reguarly via the `revalidateInterval` configuration option.
 
