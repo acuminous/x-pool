@@ -184,7 +184,7 @@ Evicts resources that failed to be destroyed.
 ### stats() : PoolStats
 
 ```js
-const { size, idle, pending, queued, acquired, available, bad } = pool.stats();
+const { queued, acquiring, acquired, idle, destroying, bad, size, available, peak } = pool.stats();
 ```
 
 Returns the following of statistics about the pool
