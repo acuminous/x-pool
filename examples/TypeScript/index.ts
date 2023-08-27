@@ -11,7 +11,6 @@ import ExampleFactory from "./ExampleFactory";
   }).on("X-POOL_EVENT", ({ code, message, err }) => {
     if (err) console.log(code, message, err);
     else console.log(code, message);
-    console.log(pool.stats());
   });
 
   process.once('SIGINT', async () => {

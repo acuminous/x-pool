@@ -189,17 +189,17 @@ const { size, idle, pending, queued, acquired, available, bad } = pool.stats();
 
 Returns the following of statistics about the pool
 
-| Name       | Type    | Notes                                                                      |
-| ---------- | ------- | -------------------------------------------------------------------------- |
-| queued     | integer | The number of queued acquisition requests                                  |
-| acquiring  | integer | The number of resources in the process of being acquired                   |
-| acquired   | integer | The number of resources currently in use                                   |
-| idle       | integer | The number of resources currently idling in the pool                       |
-| destroying | integer | The nubmer of resources currently being destroyed                          |
-| bad        | integer | The number of resourses which failed to be destroyed                       |
-| size       | integer | The current pool size (idle + acquired + bad)                              |
-| available  | integer | The number of resources available from the pool (maxSize - acquired - bad) |
-| peak       | integer | The peak pool size                                                         |
+| Name       | Type    | Notes                                                                                               |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------- |
+| queued     | integer | The number of queued acquisition requests                                                           |
+| acquiring  | integer | The number of resources in the process of being acquired                                            |
+| acquired   | integer | The number of resources currently in use                                                            |
+| idle       | integer | The number of resources currently idling in the pool                                                |
+| destroying | integer | The nubmer of resources currently being destroyed                                                   |
+| bad        | integer | The number of resourses that failed to be destroyed                                                 |
+| size       | integer | The current pool size (idle + acquired + destroying + bad)                                          |
+| available  | integer | The number of resources available from the pool (maxSize - acquiring - acquired - destroying - bad) |
+| peak       | integer | The peak pool size                                                                                  |
 
 ### shutdown() : Promise&lt;void&gt;
 

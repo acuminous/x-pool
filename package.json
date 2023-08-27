@@ -6,6 +6,19 @@
   "license": "ISC",
   "main": "index.js",
   "types": "index.d.ts",
+  "keywords": [
+    "generic",
+    "resource",
+    "pool",
+    "typed",
+    "TypeScript",
+    "observable"
+  ],
+  "directories": {
+    "example": "examples",
+    "lib": "lib",
+    "test": "test"
+  },
   "scripts": {
     "coverage": "nyc --report html --reporter lcov --reporter text-summary npm test",
     "test": "zUnit",
@@ -26,22 +39,10 @@
     "nyc": "^15.1.0",
     "zunit": "^4.0.2"
   },
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/acuminous/x-pool.git"
   },
-  "keywords": [
-    "generic",
-    "resource",
-    "pool",
-    "typed",
-    "TypeScript",
-    "observable"
-  ],
   "bugs": {
     "url": "https://github.com/acuminous/x-pool/issues"
   },
