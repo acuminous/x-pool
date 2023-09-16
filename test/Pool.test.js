@@ -188,6 +188,35 @@ describe('Pool', () => {
     });
   });
 
+  describe('with', () => {
+    it('should execute supplied function with a resource', async () => {
+      const factory = new TestFactory(['R1']);
+      const pool = createPool({ factory });
+
+      const result = await pool.with((resource) => {
+        eq(resource, 'R1');
+        return 'OK';
+      });
+
+      eq(result, 'OK');
+    });
+
+    it('should automatically release the resource after the function completes', async () => {
+      const factory = new TestFactory(['R1', 'R2']);
+      const pool = createPool({ factory });
+
+      await pool.with(async (resource1) => {
+        eq(resource1, 'R1');
+
+        const resource2 = await pool.acquire();
+        eq(resource2, 'R2');
+      });
+
+      const resource3 = await pool.acquire();
+      eq(resource3, 'R1');
+    });
+  });
+
   describe('destroy', () => {
     it('should destroy the resource', async () => {
       const factory = new TestFactory(['R1']);
