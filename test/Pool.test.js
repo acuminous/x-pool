@@ -223,7 +223,7 @@ describe('Pool', () => {
 
         await rejects(() => pool.destroy(resource), (err) => {
           eq(err.code, Pool.Events.ERR_DESTROY_FAILED);
-          eq(err.message, 'Destroy failed. See cause for details');
+          eq(err.message, 'Destroy failed: Oh Noes!');
           eq(err.cause?.message, 'Oh Noes!');
           return true;
         });
@@ -467,7 +467,7 @@ describe('Pool', () => {
 
         await rejects(() => pool.shutdown(), (err) => {
           eq(err.code, Pool.Events.ERR_SHUTDOWN_FAILED);
-          eq(err.message, 'Shutdown failed. See cause for details');
+          eq(err.message, 'Shutdown failed: Oh Noes!');
           eq(err.cause.message, 'Oh Noes!');
           return true;
         });
@@ -557,7 +557,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ validateDelay: 200, value: 'R1' }]);
       const pool = createPool({ factory, maxSize: 1 });
 
-      const resource = await pool.acquire();
+      await pool.acquire();
 
       const stats = pool.stats();
       deq(stats, { queued: 0, acquiring: 0, creating: 0, validating: 0, idle: 0, acquired: 1, destroying: 0, quarantined: 0 });
