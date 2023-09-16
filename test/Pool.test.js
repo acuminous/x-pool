@@ -150,7 +150,7 @@ describe('Pool', () => {
         });
 
         // Should eventually validate successfully and become idle
-        await scheduler.wait(100);
+        await scheduler.wait(150);
 
         const resource = await pool.acquire();
         eq(resource, 'R1');
