@@ -6,7 +6,7 @@ export class Pool<T> extends EventEmitter {
   with(fn: (resource: T) => Promise<any>) : Promise<any>;
   acquire() : Promise<T>;
   release(resource: T): void;
-  destroy(resource: T): void;
+  destroy(resource: T): Promise<void>;
   evictBadResources(): void;
   stats(): PoolStats;
   shutdown() : Promise<void>;
@@ -31,45 +31,12 @@ export interface Factory<T> {
 }
 
 export type PoolStats = {
-  pending: number;
+  queued: number;
   acquiring: number;
   acquired: number;
   idle: number;
-  bad: number;
+  quarantined: number;
   available: number;
   size: number;
-  peak: number
-}
-
-export namespace Operations {
-  class XPoolEvent {}
-  class XPoolOperation {
-    static STARTED: string;
-    static NOTICE: string;
-    static SUCCEEDED: string;
-    static FAILED: string;
-  }
-  class InitialisePoolOperation extends XPoolOperation {}
-  class ShutdownPoolOperation extends XPoolOperation {}
-  class KillPoolOperation extends XPoolOperation {}
-  class AcquireResourceOperation extends XPoolOperation {}
-  class CreateResourceOperation extends XPoolOperation {}
-  class ValidateResourceOperation extends XPoolOperation {}
-  class ReleaseResourceOperation extends XPoolOperation {}
-  class WithResourceOperation extends XPoolOperation {}
-  class DestroyResourceOperation extends XPoolOperation {}
-  class EvictBadResourcesOperation extends XPoolOperation {}
-  class DestroySpareResourcesOperation extends XPoolOperation {}
-}
-
-export namespace Errors {
-  class XPoolError extends Error {
-    static code: string;
-  }
-  class ConfigurationError extends XPoolError {}
-  class OperationTimedout extends XPoolError {}
-  class OperationFailed extends XPoolError {}
-  class ResourceCreationFailed extends XPoolError {}
-  class ResourceValidationFailed extends XPoolError {}
-  class ResourceDestructionFailed extends XPoolError {}
+  peak: number;
 }

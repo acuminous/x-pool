@@ -26,6 +26,7 @@ module.exports = class TestFactory {
 
   async destroy(resource) {
     const rd = this.#findResourceDefinition(resource);
+    if (rd.destroyed) throw new Error(`Resource ${rd.value} was already destroyed`);
     rd.destroyed = new Date();
     if (rd.destroyDelay) await scheduler.wait(rd.destroyDelay);
     if (rd.destroyError) throw rd.destroyError instanceof Error ? rd.destroyError : new Error(rd.destroyError);

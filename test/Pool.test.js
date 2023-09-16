@@ -159,9 +159,21 @@ describe('Pool', () => {
   });
 
   describe('release', () => {
-    it('should ignore unknown resources', () => {
+    it('should tolerate unknown resources', () => {
       const pool = createPool({ factory: new TestFactory() });
       pool.release('wibble');
+    });
+
+    it('should tolerate repeated releases', async () => {
+      const factory = new TestFactory(['R1']);
+      const pool = createPool({ factory });
+
+      const resource1 = await pool.acquire();
+      pool.release(resource1);
+      pool.release(resource1);
+
+      const resource2 = await pool.acquire();
+      eq(resource2, 'R1');
     });
 
     it('should check acquisition queue after releasing a resource', async () => {
@@ -178,18 +190,28 @@ describe('Pool', () => {
 
   describe('destroy', () => {
     it('should destroy the resource', async () => {
-      const factory = new TestFactory(['R1', 'R2']);
+      const factory = new TestFactory(['R1']);
       const pool = createPool({ factory });
 
-      const resource1 = await pool.acquire();
-      await pool.destroy(resource1);
+      const resource = await pool.acquire();
+      await pool.destroy(resource);
 
-      ok(factory.wasDestroyed(resource1), `Resource ${resource1} was not destroyed`);
+      ok(factory.wasDestroyed(resource), `Resource ${resource} was not destroyed`);
     });
 
-    it('should ignore unknown resources', () => {
+    it('should tolerate unknown resources', async () => {
       const pool = createPool({ factory: new TestFactory() });
-      pool.destroy('wibble');
+      await pool.destroy('wibble');
+    });
+
+    it('should tolerate repeated destroys', async () => {
+      const factory = new TestFactory(['R1']);
+      const pool = createPool({ factory });
+
+      const resource = await pool.acquire();
+      await Promise.all([pool.destroy(resource), pool.destroy(resource)]);
+
+      ok(factory.wasDestroyed(resource), `Resource ${resource} was not destroyed`);
     });
 
     it('should check acquisition queue after destroying a resource', async () => {
