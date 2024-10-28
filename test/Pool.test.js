@@ -1,7 +1,8 @@
 const { describe, it } = require('zunit');
-const { ok, deepStrictEqual: eq, rejects } = require('node:assert');
+const { ok, deepStrictEqual: eq, rejects, fail } = require('node:assert');
 const { Pool } = require('..');
 const AsyncLatch = require('../lib/utils/AsyncLatch');
+const PromiseUtils = require('../lib/utils/PromiseUtils');
 const TestFactory = require('./lib/TestFactory')
 const { takesAtLeast: tmin } = require('./lib/custom-assertions');
 
@@ -139,6 +140,25 @@ describe('Pool', () => {
       });
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+    });
+
+    it('should not cull resources if there are queued requests', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new Pool({ factory, minSize: 1, maxSize: 1 });
+
+      await pool.start();
+
+      let created = 0;
+      pool.on('resource_created', () => created++);
+
+      PromiseUtils.times(10, async () => {
+        const resource = await pool.acquire();
+        setTimeout(() => pool.release(resource), 100);
+      });
+
+      await pool.stop();
+
+      if (created > 0) fail('Did not wait for queue to be drained before destroying idle resources');
     });
 
     it('should destroy idle resources', async () => {
@@ -440,6 +460,10 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     })
+
+    it('should not cull resources when shutting down if there are queued requests')
+
+    it('should cull resources when shutting down if there are no queued requests')
   })
 
   describe('stats', () => {

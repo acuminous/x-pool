@@ -10,7 +10,7 @@ describe('Queue', () => {
     it('should queue requests', () => {
       const queue = new Queue();
       queue.add(1, noop);
-      eq(queue.stats(), { size: 1, active: 0 });
+      eq(queue.stats(), { queued: 1, dispatched: 0 });
     });
   });
 
@@ -79,7 +79,7 @@ describe('Queue', () => {
 
       queue.add(1, (request) => {
         queue.remove(request);
-        eq(queue.stats(), { size: 0, active: 0 });
+        eq(queue.stats(), { queued: 0, dispatched: 0 });
         done();
       });
 
@@ -90,14 +90,14 @@ describe('Queue', () => {
   describe('stats', () => {
     it('should report stats for empty queue', () => {
       const queue = new Queue();
-      eq(queue.stats(), { size: 0, active: 0 });
+      eq(queue.stats(), { queued: 0, dispatched: 0 });
     });
 
     it('should report stats for a populated queue', () => {
       const queue = new Queue();
       queue.add(1, noop);
       queue.add(2, noop);
-      eq(queue.stats(), { size: 2, active: 0 });
+      eq(queue.stats(), { queued: 2, dispatched: 0 });
     });
 
     it('should report active requests', () => {
@@ -105,7 +105,7 @@ describe('Queue', () => {
       queue.add(1, noop);
       queue.add(2, noop);
       queue.check();
-      eq(queue.stats(), { size: 1, active: 1 });
+      eq(queue.stats(), { queued: 1, dispatched: 1 });
     });
   })
 
