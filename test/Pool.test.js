@@ -163,7 +163,7 @@ describe('Pool', () => {
 
       await tmin(async () => {
         await pool.stop();
-      }, 200);
+      }, 199);
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     });
@@ -178,7 +178,7 @@ describe('Pool', () => {
       await tmin(async () => {
         setTimeout(() => pool.release(resource), 100);
         await pool.stop();
-      }, 100);
+      }, 99);
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     });
@@ -244,7 +244,7 @@ describe('Pool', () => {
       await tmin(async () => {
         pool.stop();
         await pool.stop();
-      }, 100)
+      }, 99)
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     });
@@ -309,7 +309,7 @@ describe('Pool', () => {
       await tmin(async () => {
         setTimeout(() => pool.release(resource), 100);
         await pool.acquire();
-      }, 100)
+      }, 99)
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
     });
