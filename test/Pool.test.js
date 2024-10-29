@@ -211,7 +211,7 @@ describe('Pool', () => {
       await pool.stop();
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-    }, { exclusive: true });
+    });
 
     it('should evict resources that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }]);
