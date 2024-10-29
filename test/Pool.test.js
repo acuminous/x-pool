@@ -1,6 +1,6 @@
 const { describe, it } = require('zunit');
 const { ok, deepStrictEqual: eq, rejects, fail } = require('node:assert');
-const { Pool } = require('..');
+const { Pool, Events } = require('..');
 const AsyncLatch = require('../lib/utils/AsyncLatch');
 const PromiseUtils = require('../lib/utils/PromiseUtils');
 const TestFactory = require('./lib/TestFactory')
@@ -18,7 +18,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource: 1 }])
       const pool = new Pool({ factory, minSize: 1 });
 
-      pool.on('resource_created', () => {
+      pool.on(Events.RESOURCE_CREATED, () => {
         throw new Error('Oh Noes!');
       });
 
@@ -57,7 +57,7 @@ describe('Pool', () => {
       const pool = new Pool({ factory, minSize: 2 });
       const latch = new AsyncLatch();
 
-      pool.on('resource_creation_error', async (err) => {
+      pool.on(Events.RESOURCE_CREATION_ERROR, async (err) => {
         eq(err.message, 'Oh Noes!');
         latch.block();
         done();
@@ -149,7 +149,7 @@ describe('Pool', () => {
       await pool.start();
 
       let created = 0;
-      pool.on('resource_created', () => created++);
+      pool.on(Events.RESOURCE_CREATED, () => created++);
 
       PromiseUtils.times(10, async () => {
         const resource = await pool.acquire();
@@ -211,7 +211,7 @@ describe('Pool', () => {
       await pool.stop();
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-    });
+    }, { exclusive: true });
 
     it('should evict resources that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }]);
@@ -229,7 +229,7 @@ describe('Pool', () => {
 
       await pool.start();
 
-      pool.on('resource_segregated', async () => {
+      pool.on(Events.RESOURCE_SEGREGATED, async () => {
         await pool.stop();
         eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
         done();
@@ -348,7 +348,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100 });
 
-      pool.on('resource_destroyed', () => {
+      pool.on(Events.RESOURCE_DESTROYED, () => {
         const definition = factory.findDefinition(1);
         ok(definition.destroyed);
         eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
@@ -362,7 +362,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100 });
 
-      pool.on('resource_segregated', () => {
+      pool.on(Events.RESOURCE_SEGREGATED, () => {
         const definition = factory.findDefinition(1);
         ok(definition.destroyed);
         eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:1, size: 2 });
@@ -376,7 +376,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
 
-      pool.on('resource_segregated', () => {
+      pool.on(Events.RESOURCE_SEGREGATED, () => {
         eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:1, size: 2 });
         done();
       });
@@ -388,7 +388,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource:1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
 
-      pool.on('resource_destroyed', () => {
+      pool.on(Events.RESOURCE_DESTROYED, () => {
         eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
         done();
       });
@@ -410,7 +410,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
       const pool = new Pool({ factory, acquireTimeout: 100 });
 
-      pool.on('resource_destroyed', () => {
+      pool.on(Events.RESOURCE_DESTROYED, () => {
         eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
         done();
       })
