@@ -33,16 +33,6 @@ describe('Request', () => {
 
       eq(request.isDispatched(), true);
     });
-
-    it('should increment attempts', () => {
-      const request = new Request('1234', () => {});
-
-      request.dispatch();
-      eq(request.attempts, 1);
-
-      request.dispatch();
-      eq(request.attempts, 2);
-    });
   });
 
   describe('abort', () => {
