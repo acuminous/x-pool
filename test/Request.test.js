@@ -14,7 +14,26 @@ describe('Request', () => {
     });
   });
 
+  describe('queue', () => {
+    it('should set the dispatched flat to false', () => {
+      const request = new Request('1234', () => {});
+
+      request.dispatch();
+      request.queue();
+
+      eq(request.isDispatched(), false);
+    });
+  });
+
   describe('dispatch', () => {
+    it('should set the dispatched flat to true', () => {
+      const request = new Request('1234', () => {});
+
+      request.dispatch();
+
+      eq(request.isDispatched(), true);
+    });
+
     it('should increment attempts', () => {
       const request = new Request('1234', () => {});
 
