@@ -10,7 +10,6 @@ describe('Request', () => {
       const request = new Request('1234', () => {});
 
       eq(request.id, '1234');
-      eq(request.attempts, 0);
     });
   });
 

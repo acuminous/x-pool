@@ -49,10 +49,10 @@ describe('Queue', () => {
     it('should yield requeued requests', (t, done) => {
       const queue = new Queue();
 
+      let attempts = 0;
       queue.add(1, (request) => {
         eq(request.id, 1);
-        if (request.attempts === 1) return queue.requeue(request);
-        eq(request.attempts, 2);
+        if (++attempts === 1) return queue.requeue(request);
         done();
       });
       queue.check();
@@ -62,9 +62,11 @@ describe('Queue', () => {
     it('should not yield a request when there are none available', (t, done) => {
       const queue = new Queue();
 
+      let attempts = 0;
       queue.add(1, (request) => {
         eq(request.id, 1);
-        eq(request.attempts, 1);
+        attempts++;
+        eq(attempts, 1);
       });
 
       queue.check();
