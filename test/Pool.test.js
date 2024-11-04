@@ -88,14 +88,14 @@ describe('Pool', () => {
       });
     });
 
-    it('should fail if the pool has been stopped', async () => {
+    it('should fail if the pool has already been stopped', async () => {
       const factory = new TestFactory()
       const pool = new Pool({ factory });
 
       await pool.stop();
 
       await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'The pool has been stopped');
+        eq(err.message, 'The pool has already been stopped');
         return true;
       });
     });
@@ -117,6 +117,7 @@ describe('Pool', () => {
   });
 
   describe('stop', () => {
+
     it('should wait for the pool to finish initialising', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 100 }, { resource: 2, createDelay: 100 }, { resource: 3, createDelay: 100 }]);
       const pool = new Pool({ factory, minSize: 3 });
@@ -135,7 +136,7 @@ describe('Pool', () => {
       await pool.stop();
 
       await rejects(pool.acquire(), (err) => {
-        eq(err.message, 'The pool has been stopped');
+        eq(err.message, 'The pool has already been stopped');
         return true;
       });
 
@@ -161,7 +162,7 @@ describe('Pool', () => {
       if (created > 0) fail('Did not wait for queue to be drained before destroying idle resources');
     });
 
-    it('should destroy idle resources', async () => {
+    it('should cull idle resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }]);
       const pool = new Pool({ factory, minSize: 3 });
 
@@ -171,7 +172,7 @@ describe('Pool', () => {
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     });
 
-    it('should wait for queued acquisition requests to be fullfilled and subsequently released', async () => {
+    it('should wait for queued acquisition requests to be fullfilled and released', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, maxSize: 1 });
 
@@ -223,7 +224,7 @@ describe('Pool', () => {
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     });
 
-    it('should evict previously segregated resources', async (t, done) => {
+    it('should evict segregated resources', async (t, done) => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
       const pool = new Pool({ factory, minSize: 1, createTimeout: 100, destroyTimeout: 100 });
 

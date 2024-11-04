@@ -1,7 +1,8 @@
 const { describe, it, beforeEach } = require('zunit');
 const { deepStrictEqual: eq, fail, rejects } = require('node:assert');
 const Bay = require('../lib/Bay');
-const Request = require('../lib/Request');
+const RequestFactory = require('../lib/queue/RequestFactory');
+const RequestFacade = require('../lib/queue/RequestFacade');
 const Events = require('../lib/Events');
 const CreateCommand = require('../lib/commands/CreateCommand');
 const DestroyCommand = require('../lib/commands/DestroyCommand');
@@ -14,7 +15,7 @@ describe('Bay', () => {
   describe('reserve', () => {
     it('should transition the bay status to RESERVED', () => {
     	const bay = new Bay();
-      const request = new Request(1);
+      const request = createRequest();
       bay.reserve(request);
 
       eq(bay.isReserved(), true);
@@ -25,7 +26,7 @@ describe('Bay', () => {
     it('should provision a resource for the bay', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      const request = new Request();
+      const request = createRequest();
       await bay.reserve(request).provision();
 
       eq(bay.contains(1), true);
@@ -34,7 +35,7 @@ describe('Bay', () => {
     it('should transition the bay status to IDLE', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      const request = new Request();
+      const request = createRequest();
       await bay.reserve(request).provision();
 
       eq(bay.isIdle(), true);
@@ -43,7 +44,8 @@ describe('Bay', () => {
     it('should emit the RESOURCE_CREATED event on success', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       bay.on(Events.RESOURCE_CREATED, done);
       await bay.provision();
@@ -52,7 +54,8 @@ describe('Bay', () => {
 		it('should emit the RESOURCE_CREATION_ERROR event on success', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1, createError: 'Oh Noes!'}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       bay.on(Events.RESOURCE_CREATION_ERROR, (err) => {
       	eq(err.message, 'Oh Noes!');
@@ -66,7 +69,8 @@ describe('Bay', () => {
     it('should acquire the an idle resource if one has been provisioned', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
       await bay.provision();
 
       bay.on(Events.RESOURCE_CREATED, () => {
@@ -82,7 +86,8 @@ describe('Bay', () => {
     it('should create a resource if one has not been provisioned', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       bay.on(Events.RESOURCE_CREATED, done);
       const resource = await bay.acquire();
@@ -92,24 +97,26 @@ describe('Bay', () => {
     it('should transition the bay status to BUSY', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       await bay.acquire();
 
       eq(bay.isBusy(), true);
     });
 
-    it('should reject attempts to acquire aborted resources', async () => {
+    it('should tolerate attempts to acquire aborted resources', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      const request = new Request();
+      const request = createRequest();
+      request.queue();
+      bay.reserve(request);
+
       request.abort();
 
-      bay.reserve(request);
-      await rejects(() => bay.acquire(), (err) => {
-        eq(err.message, 'Request aborted');
-      	return true;
-      });
+      await bay.acquire();
+
+      eq(bay.isBusy(), true);
     });
   });
 
@@ -117,7 +124,8 @@ describe('Bay', () => {
     it('should transition the bay status to IDLE', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       await bay.acquire();
       await bay.release();
@@ -128,7 +136,8 @@ describe('Bay', () => {
     it('should emit the RESOURCE_RELEASED event on success', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       await bay.acquire();
 
@@ -141,7 +150,8 @@ describe('Bay', () => {
     it('should transition the bay status to DESTROYING when resource was not provisioned', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
       await bay.destroy(noop);
 
       eq(bay.isDestroying(), true);
@@ -150,7 +160,8 @@ describe('Bay', () => {
     it('should transition the bay status to DESTROYING when resource was provisioned', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
       await bay.provision();
       await bay.destroy(noop);
 
@@ -160,7 +171,8 @@ describe('Bay', () => {
     it('should not emit the RESOURCE_DESTROYED event when a resource was not provisioned', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       bay.on(Events.RESOURCE_DESTROYED, () => {
       	fail('Event should not have been emitted');
@@ -174,7 +186,8 @@ describe('Bay', () => {
     it('should emit the RESOURCE_DESTROYED event when a resource was provisioned', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
       await bay.provision();
 
       bay.on(Events.RESOURCE_DESTROYED, (done));
@@ -184,7 +197,8 @@ describe('Bay', () => {
     it('should execute the onEventualSuccess callback after destroying the resource when a resource was not provisioned', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       await bay.destroy(done);
     });
@@ -192,7 +206,8 @@ describe('Bay', () => {
     it('should execute the onEventualSuccess callback after destroying the resource when a resource was provisioned', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
       await bay.provision();
 
       await bay.destroy(done);
@@ -201,7 +216,8 @@ describe('Bay', () => {
     it('should wait for inflight resource creation to complete before destroying', async (t, done) => {
     	const factory = new TestFactory([{ resource: 1, createDelay: 100}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       let created = false;
       bay.on(Events.RESOURCE_CREATED, () => {
@@ -253,7 +269,8 @@ describe('Bay', () => {
 
       eq(bay.isInitialising(), true);
 
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
       eq(bay.isInitialising(), true);
 
       await bay.provision();
@@ -265,7 +282,8 @@ describe('Bay', () => {
     it('should return true if the bay contains the specified resource', async () => {
     	const factory = new TestFactory([{ resource: 1}])
     	const bay = createBay({ factory });
-      bay.reserve(new Request());
+      const request = createRequest();
+      bay.reserve(request);
 
       const resource = await bay.acquire();
 
@@ -290,3 +308,7 @@ function createBay({ factory }) {
   return new Bay('B1', commands);
 }
 
+function createRequest() {
+  const factory = new RequestFactory([], []);
+  return new RequestFacade(1, () => {}, factory);
+}
