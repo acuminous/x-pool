@@ -34,6 +34,29 @@ describe('Pool', () => {
 
   describe('start', () => {
 
+    it('should fail if the pool has already been started', async () => {
+      const factory = new TestFactory()
+      const pool = new Pool({ factory });
+      await pool.start();
+
+      await rejects(() => pool.start(), (err) => {
+        eq(err.message, 'The pool has already been started');
+        return true;
+      });
+    });
+
+    it('should fail if the pool has already been stopped', async () => {
+      const factory = new TestFactory()
+      const pool = new Pool({ factory });
+
+      await pool.stop();
+
+      await rejects(() => pool.start(), (err) => {
+        eq(err.message, 'The pool has already been stopped');
+        return true;
+      });
+    });
+
     it('should create the minimum number of resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }])
       const pool = new Pool({ factory, minSize: 2 });
@@ -77,30 +100,7 @@ describe('Pool', () => {
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
     });
 
-    it('should fail if the pool has already been started', async () => {
-      const factory = new TestFactory()
-      const pool = new Pool({ factory });
-      await pool.start();
-
-      await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'The pool has already been started');
-        return true;
-      });
-    });
-
-    it('should fail if the pool has already been stopped', async () => {
-      const factory = new TestFactory()
-      const pool = new Pool({ factory });
-
-      await pool.stop();
-
-      await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'The pool has already been stopped');
-        return true;
-      });
-    });
-
-    it('should fail if the start times out', async () => {
+    it('should fail if the start times out', async (t, done) => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
       const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
 
@@ -109,10 +109,21 @@ describe('Pool', () => {
         return true;
       });
 
-      await new Promise((resolve) => {
-        setTimeout(resolve, 200)
-      })
+      setTimeout(done, 200);
+    });
 
+    it('should destroy created resources if the start times out', async (t, done) => {
+      const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
+      const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
+
+      pool.on(Events.RESOURCE_DESTROYED, () => {
+        done();
+      });
+
+      await rejects(() => pool.start(), (err) => {
+        eq(err.message, 'Failed to start pool within 100ms');
+        return true;
+      });
     });
   });
 
