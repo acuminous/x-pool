@@ -18,7 +18,7 @@ class TestFactory {
 		return d.resource;
 	}
 
-  async destroy(resource) {
+  async destroy(pool, resource) {
     const d = this.findDefinition(resource);
     d.destroyed = new Date();
     if (d.destroyDelay) await scheduler.wait(d.destroyDelay);

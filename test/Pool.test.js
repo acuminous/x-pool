@@ -1,9 +1,11 @@
 const { describe, it } = require('zunit');
 const { ok, deepStrictEqual: eq, rejects, fail } = require('node:assert');
+const { scheduler } = require('node:timers/promises');
 const { Pool, Events } = require('..');
 const AsyncLatch = require('../lib/utils/AsyncLatch');
 const PromiseUtils = require('../lib/utils/PromiseUtils');
 const TestFactory = require('./lib/TestFactory')
+const EventLog = require('./lib/EventLog')
 const { takesAtLeast: tmin } = require('./lib/custom-assertions');
 
 
@@ -22,9 +24,9 @@ describe('Pool', () => {
         throw new Error('Oh Noes!');
       });
 
-      pool.on('error', (err) => {
-        eq(err.message, "Custom event handlers must not throw errors; however, an error was thrown by a handler listening to 'resource_created' events");
-        eq(err.cause.message, 'Oh Noes!');
+      pool.on('error', ({ error }) => {
+        eq(error.message, 'Custom event handlers must not throw errors');
+        eq(error.cause.message, 'Oh Noes!');
         done();
       });
 
@@ -39,8 +41,8 @@ describe('Pool', () => {
       const pool = new Pool({ factory });
       await pool.start();
 
-      await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'The pool has already been started');
+      await rejects(() => pool.start(), (error) => {
+        eq(error.message, 'The pool has already been started');
         return true;
       });
     });
@@ -51,8 +53,8 @@ describe('Pool', () => {
 
       await pool.stop();
 
-      await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'The pool has already been stopped');
+      await rejects(() => pool.start(), (error) => {
+        eq(error.message, 'The pool has already been stopped');
         return true;
       });
     });
@@ -63,67 +65,164 @@ describe('Pool', () => {
 
       await pool.start();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:2, busy:0, destroying:0, segregated:0, size: 2 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
     });
 
     it('should tolerate errors creating resources', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }, { resource: 4 }])
+      const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }])
       const pool = new Pool({ factory, minSize: 2 });
 
       await pool.start();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:2, busy:0, destroying:0, segregated:0, size: 2 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
     });
 
-    it('should report errors creating resources', async (t, done) => {
-      const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }, { resource: 4 }])
+    it('should report errors creating resources', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }])
       const pool = new Pool({ factory, minSize: 2 });
-      const latch = new AsyncLatch();
-
-      pool.on(Events.RESOURCE_CREATION_ERROR, async (err) => {
-        eq(err.message, 'Oh Noes!');
-        latch.block();
-        done();
-      });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
 
-      latch.release();
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+    });
+
+    it('should segregate then destroy resources created belatedly', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200 }, { resource: 3 }])
+      const pool = new Pool({ factory, minSize: 2, createTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTROYED
+      ]);
+    });
+
+    it('should segregate and eventually destroy resources created belatedly that timeout while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200 }, { resource: 3 }])
+      const pool = new Pool({ factory, minSize: 2, createTimeout: 100, destroyTimeout: 100 });
+
+      const eventLog = new EventLog(pool, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_DESTROYED,
+      ]);
+
+      await pool.start();
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTROYED,
+      ]);
+    });
+
+    it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }])
+      const pool = new Pool({ factory, minSize: 2, createTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:1, size: 3 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+      ]);
+    });
+
+    it('should permanently segregate resources created belatedly that timeout then error while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }])
+      const pool = new Pool({ factory, minSize: 2, createTimeout: 100, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:1, size: 3 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+      ]);
     });
 
     it('should default to zero minimum resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }])
       const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, []);
     });
 
-    it('should fail if the start times out', async (t, done) => {
+    it('should reject if the start times out', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
       const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
 
-      await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'Failed to start pool within 100ms');
+      await rejects(() => pool.start(), (error) => {
+        eq(error.message, 'Failed to start pool within 100ms');
         return true;
       });
-
-      setTimeout(done, 200);
     });
 
-    it('should destroy created resources if the start times out', async (t, done) => {
+    it('should segregate resources created belatedly if start times out', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
       const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
-      pool.on(Events.RESOURCE_DESTROYED, () => {
-        done();
-      });
-
-      await rejects(() => pool.start(), (err) => {
-        eq(err.message, 'Failed to start pool within 100ms');
+      await rejects(() => pool.start(), (error) => {
+        eq(error.message, 'Failed to start pool within 100ms');
         return true;
       });
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_SEGREGATED,
+      ]);
     });
   });
 
@@ -136,7 +235,7 @@ describe('Pool', () => {
       pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
     });
 
     it('should fail new acquisition requests', async () => {
@@ -146,106 +245,125 @@ describe('Pool', () => {
       await pool.start();
       await pool.stop();
 
-      await rejects(pool.acquire(), (err) => {
-        eq(err.message, 'The pool has already been stopped');
+      await rejects(pool.acquire(), (error) => {
+        eq(error.message, 'The pool has already been stopped');
         return true;
       });
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-    });
-
-    it('should not cull resources if there are queued requests', async () => {
-      const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new Pool({ factory, minSize: 1, maxSize: 1 });
-
-      await pool.start();
-
-      let created = 0;
-      pool.on(Events.RESOURCE_CREATED, () => created++);
-
-      PromiseUtils.times(10, async () => {
-        const resource = await pool.acquire();
-        setTimeout(() => pool.release(resource), 100);
-      });
-
-      await pool.stop();
-
-      if (created > 0) fail('Did not wait for queue to be drained before destroying idle resources');
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
     });
 
     it('should cull idle resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }]);
       const pool = new Pool({ factory, minSize: 3 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_DESTROYED,
+      ])
     });
 
-    it('should wait for queued acquisition requests to be fullfilled and released', async () => {
-      const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new Pool({ factory, maxSize: 1 });
+    it('should ignore segregated resources', async () => {
+      const factory = new TestFactory([{ resource: 1, createDelay: 200 }]);
+      const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
-      await pool.start();
-      const resource = await pool.acquire();
-      pool.acquire();
-      setTimeout(() => pool.release(resource), 100);
-      setTimeout(() => pool.release(resource), 200);
+      await rejects(pool.start(), (error) => {
+        eq(error.message, 'Failed to start pool within 100ms');
+        return true;
+      });
 
-      await tmin(async () => {
-        await pool.stop();
-      }, 199);
+      await pool.stop();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_SEGREGATED,
+      ]);
     });
 
-    it('should wait for acquired resources to be released and destroyed', async () => {
+    it('should wait for queued requests to complete before culling resources', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new Pool({ factory });
+      const pool = new Pool({ factory, minSize: 1, maxSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
-      const resource = await pool.acquire();
 
-      await tmin(async () => {
+      const events = [Events.RESOURCE_CREATED, Events.RESOURCE_RELEASED];
+      PromiseUtils.times(10, async () => {
+        events.push(Events.RESOURCE_ACQUIRED, Events.RESOURCE_RELEASED)
+        const resource = await pool.acquire();
         setTimeout(() => pool.release(resource), 100);
-        await pool.stop();
-      }, 99);
+      });
+      events.push(Events.RESOURCE_DESTROYED);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      await pool.stop();
+
+      eq(eventLog.events, events);
     });
 
-    it('should evict resources that timeout while being destroyed', async () => {
+    it('should segregate resources that timeout while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyDelay: 200 }]);
       const pool = new Pool({ factory, minSize: 1, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+      ])
     });
 
-    it('should evict resources that error while being destroyed', async () => {
+    it('should tolerate belated destruction of resources that timeout while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, destroyDelay: 200 }]);
+      const pool = new Pool({ factory, minSize: 1, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await pool.stop();
+      await scheduler.wait(200);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTROYED,
+      ])
+    });
+
+    it('should segregate resources that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }]);
       const pool = new Pool({ factory, minSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-    });
-
-    it('should evict segregated resources', async (t, done) => {
-      const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
-      const pool = new Pool({ factory, minSize: 1, createTimeout: 100, destroyTimeout: 100 });
-
-      await pool.start();
-
-      pool.on(Events.RESOURCE_SEGREGATED, async () => {
-        await pool.stop();
-        eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-        done();
-      })
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+      ])
     });
 
     it('should tolerate stopping a pool that has not been started', async () => {
@@ -254,31 +372,23 @@ describe('Pool', () => {
 
       await pool.stop();
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
     });
 
-    it('should tolerate stopping a pool that has already been stopped', async () => {
-      const factory = new TestFactory();
-      const pool = new Pool({ factory });
-
-      await pool.start();
-      await pool.stop();
-      await pool.stop();
-
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-    });
-
-    it('should block subsequent calls to stop until the pool has stopped', async () => {
-      const factory = new TestFactory([{ resource: 1, destroyDelay: 100 }]);
+    it('should tolerate concurrent attempts to stop a pool', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, minSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
       await pool.start();
+      await Promise.all([pool.stop(), pool.stop(), pool.stop()]);
 
-      await tmin(async () => {
-        pool.stop();
-        await pool.stop();
-      }, 99)
-
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_DESTROYED,
+      ])
     });
 
     it('should fail if the stop times out', async () => {
@@ -286,12 +396,12 @@ describe('Pool', () => {
       const pool = new Pool({ factory, minSize: 1, stopTimeout: 100 });
 
       await pool.start();
-      await rejects(() => pool.stop(), (err) => {
-        eq(err.message, 'Failed to stop pool within 100ms')
+      await rejects(() => pool.stop(), (error) => {
+        eq(error.message, 'Failed to stop pool within 100ms')
         return true;
       });
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:1, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:1, segregated:0, size: 1 });
     })
   });
 
@@ -300,28 +410,40 @@ describe('Pool', () => {
     it('should use an idle resource if one is available', async () => {
       const factory = new TestFactory([{ resource: 1 }])
       const pool = new Pool({ factory, minSize: 1 });
-      await pool.start();
+      const eventLog = new EventLog(pool, Object.values(Events));
 
+      await pool.start();
       const resource = await pool.acquire();
       eq(resource, 1);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_ACQUIRED,
+      ])
     });
 
-    it('should create a resource if the pool is empty', async () => {
+    it('should create a new resource if the pool is empty', async () => {
       const factory = new TestFactory([{ resource: 1 }])
       const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource = await pool.acquire();
 
       eq(resource, 1);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+      ])
     });
 
-    it('should create a resource if all resources are busy', async () => {
+    it('should create a new resource if all resources are busy', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }])
       const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource1 = await pool.acquire();
       eq(resource1, 1);
@@ -329,12 +451,19 @@ describe('Pool', () => {
       const resource2 = await pool.acquire();
       eq(resource2, 2);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:2, destroying:0, segregated:0, size: 2 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:2, doomed:0, segregated:0, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+      ])
     });
 
     it('should wait until there is an idle resource if the pool is fully utilised', async () => {
       const factory = new TestFactory([{ resource: 1 }])
       const pool = new Pool({ factory, maxSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource = await pool.acquire();
 
@@ -343,111 +472,174 @@ describe('Pool', () => {
         await pool.acquire();
       }, 99)
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_ACQUIRED,
+      ])
     });
 
     it('should retry on resource creation error', async () => {
       const factory = new TestFactory([{ createError: 'Oh Noes!' }, { resource: 2 }])
       const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource = await pool.acquire();
       eq(resource, 2);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+      ])
     });
 
-    it('should destroy resources created after the create timedout', async (t, done) => {
+    it('should segregate then destroy resources created belatedly', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100 });
-
-      pool.on(Events.RESOURCE_DESTROYED, () => {
-        const definition = factory.findDefinition(1);
-        ok(definition.destroyed);
-        eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
-        done();
-      });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTROYED,
+      ])
     });
 
-    it('should segregate resources that error when being destroyed', async (t, done) => {
+    it('should permanently segregate resources created belatedly that error when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100 });
-
-      pool.on(Events.RESOURCE_SEGREGATED, () => {
-        const definition = factory.findDefinition(1);
-        ok(definition.destroyed);
-        eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:1, size: 2 });
-        done();
-      });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:1, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+      ])
     });
 
-    it('should segregate resources that timeout when being destroyed', async (t, done) => {
+    it('should segregate and eventually destroy resources created belatedly that timeout when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }])
       const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
-
-      pool.on(Events.RESOURCE_SEGREGATED, () => {
-        eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:1, size: 2 });
-        done();
-      });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTROYED,
+      ])
     });
 
-    it('should evict resources that are successfully destroyed after the destroy times out', async (t, done) => {
-      const factory = new TestFactory([{ resource:1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }])
-      const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
-
-      pool.on(Events.RESOURCE_DESTROYED, () => {
-        eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
-        done();
-      });
+    it('should permanently segregate resources created belatedly that error when being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
+      const pool = new Pool({ factory, createTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:1, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+      ])
+    });
+
+    it('should permanently segregate resources created belatedly that timeout then error when being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
+      const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.acquire();
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:1, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+      ])
     });
 
     it('should reject if the acquire times out', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
       const pool = new Pool({ factory, acquireTimeout: 100 });
 
-      await rejects(() => pool.acquire(), (err) => {
-        eq(err.message, 'Failed to acquire resource within 100ms');
+      await rejects(() => pool.acquire(), (error) => {
+        eq(error.message, 'Failed to acquire resource within 100ms');
         return true;
       });
     });
 
-    it('should destroy any created resources if acquire times out', async (t, done) => {
+    it('should segregate then destroy resources created belatedly after the acquire timeout', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
       const pool = new Pool({ factory, acquireTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
-      pool.on(Events.RESOURCE_DESTROYED, () => {
-        eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
-        done();
-      })
-
-      await rejects(() => pool.acquire(), (err) => {
-        eq(err.message, 'Failed to acquire resource within 100ms');
+      await rejects(() => pool.acquire(), (error) => {
+        eq(error.message, 'Failed to acquire resource within 100ms');
         return true;
       });
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTROYED,
+      ])
     });
 
-    it('should not remove dispatched requests from the queue if acquire times out');
-
-    it('should remove request from the queue if acquire times out before the request is dispatched', async () => {
+    it('should remove queued requests if acquire times out', async () => {
       const factory = new TestFactory([{ resource: 1 }])
       const pool = new Pool({ factory, maxSize: 1, acquireTimeout: 100 });
 
       // Block the queue by acquiring the only resource
       await pool.acquire();
 
-      await rejects(() => pool.acquire(), (err) => {
-        eq(err.message, 'Failed to acquire resource within 100ms');
+      await rejects(() => pool.acquire(), (error) => {
+        eq(error.message, 'Failed to acquire resource within 100ms');
         return true;
       });
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:1, destroying:0, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
     });
   });
 
@@ -456,26 +648,30 @@ describe('Pool', () => {
     it('should release resources returned to the pool', async () => {
       const factory = new TestFactory([{ resource: 1 }])
       const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource = await pool.acquire();
 
       await pool.release(resource);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:1, busy:0, destroying:0, segregated:0, size: 1 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:1, acquired:0, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_RELEASED,
+      ])
     })
 
     it('should tolerate attempts to release an unmanaged resource', async () => {
       const factory = new TestFactory()
       const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.release(2);
 
-      eq(pool.stats(), { queued:0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [])
     })
-
-    it('should not cull resources when shutting down if there are queued requests')
-
-    it('should cull resources when shutting down if there are no queued requests')
   })
 
   describe('stats', () => {
@@ -483,7 +679,7 @@ describe('Pool', () => {
     it('should provide empty statistics', () => {
       const pool = new Pool();
       const stats = pool.stats();
-      eq(pool.stats(), { queued: 0, initialising: 0, idle:0, busy:0, destroying:0, segregated:0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
     });
   });
-})
+}, { exclusive: true })

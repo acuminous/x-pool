@@ -1,5 +1,5 @@
 const Pool = require('./lib/Pool');
-const Events = require('./lib/Events');
+const Events = require('./lib/bay/Events');
 
 module.exports = {
 	Pool,

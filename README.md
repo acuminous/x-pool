@@ -1,5 +1,7 @@
 
 ### TODO
+- Create an ArrayLike object for helping with state transitions, e.g. array.remove(item) and array.move(item, destination)
+- Move latches to commands
 - Resource validation
 - Resource release
 - Min Idle
@@ -14,3 +16,6 @@
 - Performance Optimisation
 	- Cache pool stats
 	- More efficient data structure for bays
+- Option to stop quickly, which aborts queued requests (but not dispatched ones)
+- Remove conditional logic from queue
+- Resources which timeout during acquision but not creation/validation are currently moved to segregated. This means we will not wait for them to be created when stopping the pool. We might need another "ward" for commands that haven't timed out yet when the start/acquire/stop timesous
