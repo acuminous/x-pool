@@ -9,7 +9,7 @@ const EventLog = require('./lib/EventLog')
 const { takesAtLeast: tmin } = require('./lib/custom-assertions');
 
 
-describe('Pool', () => {
+describe('XPool', () => {
 
   describe('configuration', () => {
     it('validates min and max pool size')
