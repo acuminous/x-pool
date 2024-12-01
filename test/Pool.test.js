@@ -795,7 +795,25 @@ describe('XPool', () => {
       eq(eventLog.events, [])
     })
 
-    it('should maintain the minimum pool size')
+    it('should maintain the minimum pool size', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { resource: 2 }])
+      const pool = new Pool({ factory, minPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      const resource = await pool.acquire();
+      await pool.destroy(resource);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:1, acquired:0, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ])
+    })
   })
 
   describe('stats', () => {
