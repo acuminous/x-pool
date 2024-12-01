@@ -2,7 +2,6 @@ const { describe, it } = require('zunit');
 const { ok, deepStrictEqual: eq, rejects, fail } = require('node:assert');
 const { scheduler } = require('node:timers/promises');
 const { Pool, Events } = require('..');
-const AsyncLatch = require('../lib/utils/AsyncLatch');
 const PromiseUtils = require('../lib/utils/PromiseUtils');
 const TestFactory = require('./lib/TestFactory')
 const EventLog = require('./lib/EventLog')
