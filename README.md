@@ -5,7 +5,6 @@
 - Reap Idle resources
 - FIFO vs LIFO
 - Acquire Retry Wait option (slow creation on error)
-- Add pool.with(async (resource) => {}) API
 - Limit start and stop concurrency
 - Add error code
 - Option to stop quickly, which aborts queued requests (but not dispatched ones)
