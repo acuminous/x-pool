@@ -480,6 +480,25 @@ describe('XPool', () => {
       ])
     });
 
+    it('should reject if the maximum queue depth is exceeded', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory, maxSize: 1, maxQueueSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      const resource = await pool.acquire();
+      pool.acquire();
+      await rejects(() => pool.acquire(), (error) => {
+        eq(error.message, 'Maximum queue size of 1 exceeded');
+        return true;
+      })
+
+      eq(pool.stats(), { queued:1, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+      ])
+    }, { exclusive: true });
+
     it('should retry on resource creation error', async () => {
       const factory = new TestFactory([{ createError: 'Oh Noes!' }, { resource: 2 }])
       const pool = new Pool({ factory });
@@ -762,7 +781,7 @@ describe('XPool', () => {
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
       eq(eventLog.events, [])
     })
-  }, { exclusive: true })
+  })
 
   describe('stats', () => {
 
