@@ -246,7 +246,7 @@ describe('Pool', () => {
       await pool.stop();
 
       await rejects(pool.acquire(), (error) => {
-        eq(error.message, 'The pool has already been stopped');
+        eq(error.message, 'The pool has been stopped');
         return true;
       });
 
