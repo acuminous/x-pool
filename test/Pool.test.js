@@ -187,7 +187,7 @@ describe('XPool', () => {
       ]);
     });
 
-    it('should default to zero minimum resources', async () => {
+    it('should default to no minimum pool size', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }])
       const pool = new Pool({ factory });
       const eventLog = new EventLog(pool, Object.values(Events));
@@ -499,6 +499,19 @@ describe('XPool', () => {
       ])
     });
 
+    it('should default to no maximum queue depth', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory, maxPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      const resource = await pool.acquire();
+      const list = PromiseUtils.times(1000, async () => {
+        pool.acquire();
+      });
+
+      eq(pool.stats(), { queued:1000, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
+    });
+
     it('should retry on resource creation error', async () => {
       const factory = new TestFactory([{ createError: 'Oh Noes!' }, { resource: 2 }])
       const pool = new Pool({ factory });
@@ -781,6 +794,8 @@ describe('XPool', () => {
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
       eq(eventLog.events, [])
     })
+
+    it('should maintain the minimum pool size')
   })
 
   describe('stats', () => {
