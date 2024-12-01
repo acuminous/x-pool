@@ -102,9 +102,47 @@ describe('XPool', () => {
       ]);
     });
 
+    it('should backoff exponentially after an error creating resources', async () => {
+      const factory = new TestFactory([{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, { resource: 4 }])
+      const pool = new Pool({ factory, minPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await tmin(async () => {
+        await pool.start();
+      }, 100 + 200 + 400)
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:1, acquired:0, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+    });
+
+    it('should honour backoff configuration', async () => {
+      const factory = new TestFactory([{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, { resource: 4 }])
+      const pool = new Pool({ factory, minPoolSize: 1, backoff: { initialValue: 50, factor: 1.5, maxValue: 100 } });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await tmin(async () => {
+        await pool.start();
+      }, 50 + 75 + 100)
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:1, acquired:0, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+    });
+
     it('should segregate then destroy resources created belatedly', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200 }, { resource: 3 }])
-      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -153,7 +191,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }])
-      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -175,7 +213,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that timeout then error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }])
-      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, destroyTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, destroyTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -539,7 +577,7 @@ describe('XPool', () => {
 
     it('should segregate then destroy resources created belatedly', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }, { resource: 2 }])
-      const pool = new Pool({ factory, createTimeout: 100 });
+      const pool = new Pool({ factory, createTimeout: 100, backoff: { maxValue: 100 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
@@ -558,7 +596,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that error when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
-      const pool = new Pool({ factory, createTimeout: 100 });
+      const pool = new Pool({ factory, createTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
@@ -578,7 +616,7 @@ describe('XPool', () => {
 
     it('should segregate and eventually destroy resources created belatedly that timeout when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }])
-      const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
+      const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
@@ -599,7 +637,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that error when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
-      const pool = new Pool({ factory, createTimeout: 100 });
+      const pool = new Pool({ factory, createTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
@@ -619,7 +657,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that timeout then error when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }])
-      const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100 });
+      const pool = new Pool({ factory, createTimeout: 100, destroyTimeout: 100, backoff: { maxValue: 0 } });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.acquire();
