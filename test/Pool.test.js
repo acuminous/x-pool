@@ -854,6 +854,81 @@ describe('XPool', () => {
     })
   })
 
+  describe('with', () => {
+    it('should acquire and release resources', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory, minPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await pool.with((resource) => {
+        eq(resource, 1);
+      })
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:1, acquired:0, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_RELEASED,
+      ])
+    });
+
+    it('should yield synchronous function result', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory, minPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      const result = await pool.with((resource) => {
+        return 'ok'
+      })
+
+      eq(result, 'ok');
+    });
+
+    it('should yield asynchronous function result', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory, minPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      const result = await pool.with(async (resource) => {
+        return Promise.resolve('ok')
+      })
+
+      eq(result, 'ok');
+    });
+
+    it('should reject errors thrown by the function', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory, minPoolSize: 1 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await rejects(() => pool.with(async (resource) => {
+        throw new Error('Oh Noes!')
+      }), (error) => {
+        eq(error.message, 'Oh Noes!');
+        return true;
+      });
+    });
+
+    it('should timeout', async () => {
+      const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
+      const pool = new Pool({ factory, acquireTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      await rejects(() => pool.with(async (resource) => {
+        fail('Should have timed out');
+      }), (error) => {
+        eq(error.message, 'Failed to acquire resource within 100ms');
+        return true;
+      });
+    });
+  })
+
   describe('stats', () => {
 
     it('should provide empty statistics', () => {
