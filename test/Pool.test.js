@@ -673,6 +673,97 @@ describe('XPool', () => {
     })
   })
 
+  describe('destroy', () => {
+
+    it('should destroy resources returned to the pool', async () => {
+      const factory = new TestFactory([{ resource: 1 }])
+      const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      const resource = await pool.acquire();
+
+      await pool.destroy(resource);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_DESTROYED,
+      ])
+    })
+
+    it('should segregate resources that error while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }])
+      const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      const resource = await pool.acquire();
+
+      await pool.destroy(resource);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+      ])
+    })
+
+    it('should segregate then destroy resources that time out while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, destroyDelay: 200 }])
+      const pool = new Pool({ factory, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      const resource = await pool.acquire();
+
+      await pool.destroy(resource);
+
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTROYED,
+      ])
+    })
+
+    it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, destroyDelay: 200, destroyError: 'Oh Noes!' }])
+      const pool = new Pool({ factory, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      const resource = await pool.acquire();
+
+      await pool.destroy(resource);
+
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+      ])
+    })
+
+    it('should tolerate attempts to destroy an unmanaged resource', async () => {
+      const factory = new TestFactory()
+      const pool = new Pool({ factory });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.destroy(2);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
+      eq(eventLog.events, [])
+    })
+  }, { exclusive: true })
+
   describe('stats', () => {
 
     it('should provide empty statistics', () => {
@@ -681,4 +772,4 @@ describe('XPool', () => {
       eq(pool.stats(), { queued: 0, initialising: 0, idle:0, acquired:0, doomed:0, segregated:0, size: 0 });
     });
   });
-}, { exclusive: true })
+})
