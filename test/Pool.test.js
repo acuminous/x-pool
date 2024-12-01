@@ -67,6 +67,15 @@ describe('XPool', () => {
       eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
     });
 
+    it('should create the minimum number of idle resources', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { resource: 2 }])
+      const pool = new Pool({ factory, minIdleResources: 2 });
+
+      await pool.start();
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:0, doomed:0, segregated:0, size: 2 });
+    });
+
     it('should tolerate errors creating resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }])
       const pool = new Pool({ factory, minPoolSize: 2 });
@@ -672,6 +681,28 @@ describe('XPool', () => {
 
       eq(pool.stats(), { queued:0, initialising: 0, idle:0, acquired:1, doomed:0, segregated:0, size: 1 });
     });
+
+    it('should maintain the minimum number of idle resources', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }])
+      const pool = new Pool({ factory, minIdleResources: 2 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      const resource = await pool.acquire();
+
+      await scheduler.wait(100);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:2, acquired:1, doomed:0, segregated:0, size: 3 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ])
+    })
   });
 
   describe('release', () => {
