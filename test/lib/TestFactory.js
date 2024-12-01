@@ -2,21 +2,22 @@ const { scheduler } = require('node:timers/promises');
 
 class TestFactory {
 
-	#definitions;
-	#index;
+  #definitions;
 
-	constructor(definitions = []) {
-		this.#definitions = definitions;
-		this.#index = 0;
-	}
+  #index;
 
-	async create() {
-		if (this.#index >= this.#definitions.length) throw new Error('Test Factory has exhausted all resources');
-		const d = this.#definitions[this.#index++];
+  constructor(definitions = []) {
+    this.#definitions = definitions;
+    this.#index = 0;
+  }
+
+  async create() {
+    if (this.#index >= this.#definitions.length) throw new Error('Test Factory has exhausted all resources');
+    const d = this.#definitions[this.#index++];
     if (d.createDelay) await scheduler.wait(d.createDelay);
     if (d.createError) throw d.createError instanceof Error ? d.createError : new Error(d.createError);
-		return d.resource;
-	}
+    return d.resource;
+  }
 
   async destroy(pool, resource) {
     const d = this.findDefinition(resource);

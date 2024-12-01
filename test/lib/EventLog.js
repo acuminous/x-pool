@@ -1,32 +1,33 @@
 class EventLog {
-	#events = [];
-	#payloads = [];
+  #events = [];
 
-	constructor(emitter, candidates) {
-		if (this.#hasDuplicates(candidates)) throw new Error(`Candidate events contains duplicates: [${this.#findDuplicates(candidates).join(', ')}]`);
-		candidates.forEach((event) => {
-			emitter.on(event, (...args) => {
-				this.#events.push(event);
-				this.#payloads.push(args)
-			});
-		})
-	}
+  #payloads = [];
 
-	get events() {
-		return this.#events;
-	}
+  constructor(emitter, candidates) {
+    if (this.#hasDuplicates(candidates)) throw new Error(`Candidate events contains duplicates: [${this.#findDuplicates(candidates).join(', ')}]`);
+    candidates.forEach((event) => {
+      emitter.on(event, (...args) => {
+        this.#events.push(event);
+        this.#payloads.push(args);
+      });
+    });
+  }
 
-	get payloads() {
-		return this.#payloads;
-	}
+  get events() {
+    return this.#events;
+  }
 
-	#hasDuplicates(candidates) {
-		return this.#findDuplicates(candidates).length > 0;
-	}
+  get payloads() {
+    return this.#payloads;
+  }
 
-	#findDuplicates(candidates) {
-		return [...new Set(candidates.filter((item, index) => candidates.indexOf(item) !== index))].map((symbol) => symbol.description);
-	}
+  #hasDuplicates(candidates) {
+    return this.#findDuplicates(candidates).length > 0;
+  }
+
+  #findDuplicates(candidates) {
+    return [...new Set(candidates.filter((item, index) => candidates.indexOf(item) !== index))].map((symbol) => symbol.description);
+  }
 }
 
 module.exports = EventLog;
