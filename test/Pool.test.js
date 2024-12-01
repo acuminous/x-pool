@@ -17,7 +17,7 @@ describe('XPool', () => {
   describe('events', () => {
     it('should report errors thrown in custom resource handlers', async (t, done) => {
       const factory = new TestFactory([{ resource: 1 }])
-      const pool = new Pool({ factory, minSize: 1 });
+      const pool = new Pool({ factory, minPoolSize: 1 });
 
       pool.on(Events.RESOURCE_CREATED, () => {
         throw new Error('Oh Noes!');
@@ -60,7 +60,7 @@ describe('XPool', () => {
 
     it('should create the minimum number of resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2 });
+      const pool = new Pool({ factory, minPoolSize: 2 });
 
       await pool.start();
 
@@ -69,7 +69,7 @@ describe('XPool', () => {
 
     it('should tolerate errors creating resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2 });
+      const pool = new Pool({ factory, minPoolSize: 2 });
 
       await pool.start();
 
@@ -78,7 +78,7 @@ describe('XPool', () => {
 
     it('should report errors creating resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2 });
+      const pool = new Pool({ factory, minPoolSize: 2 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -95,7 +95,7 @@ describe('XPool', () => {
 
     it('should segregate then destroy resources created belatedly', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200 }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2, createTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -116,7 +116,7 @@ describe('XPool', () => {
 
     it('should segregate and eventually destroy resources created belatedly that timeout while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200 }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2, createTimeout: 100, destroyTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, destroyTimeout: 100 });
 
       const eventLog = new EventLog(pool, [
         Events.RESOURCE_CREATED,
@@ -144,7 +144,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2, createTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -166,7 +166,7 @@ describe('XPool', () => {
 
     it('should permanently segregate resources created belatedly that timeout then error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }])
-      const pool = new Pool({ factory, minSize: 2, createTimeout: 100, destroyTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, destroyTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -200,7 +200,7 @@ describe('XPool', () => {
 
     it('should reject if the start times out', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
-      const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
 
       await rejects(() => pool.start(), (error) => {
         eq(error.message, 'Failed to start pool within 100ms');
@@ -210,7 +210,7 @@ describe('XPool', () => {
 
     it('should segregate resources created belatedly if start times out', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }])
-      const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await rejects(() => pool.start(), (error) => {
@@ -229,7 +229,7 @@ describe('XPool', () => {
 
     it('should wait for the pool to finish initialising', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 100 }, { resource: 2, createDelay: 100 }, { resource: 3, createDelay: 100 }]);
-      const pool = new Pool({ factory, minSize: 3 });
+      const pool = new Pool({ factory, minPoolSize: 3 });
 
       pool.start();
       await pool.stop();
@@ -254,7 +254,7 @@ describe('XPool', () => {
 
     it('should cull idle resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { resource: 2 }, { resource: 3 }]);
-      const pool = new Pool({ factory, minSize: 3 });
+      const pool = new Pool({ factory, minPoolSize: 3 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -276,7 +276,7 @@ describe('XPool', () => {
 
     it('should ignore segregated resources', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }]);
-      const pool = new Pool({ factory, minSize: 1, startTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await rejects(pool.start(), (error) => {
@@ -294,7 +294,7 @@ describe('XPool', () => {
 
     it('should wait for queued requests to complete before culling resources', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new Pool({ factory, minSize: 1, maxSize: 1 });
+      const pool = new Pool({ factory, minPoolSize: 1, maxPoolSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -314,7 +314,7 @@ describe('XPool', () => {
 
     it('should segregate resources that timeout while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyDelay: 200 }]);
-      const pool = new Pool({ factory, minSize: 1, destroyTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 1, destroyTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -331,7 +331,7 @@ describe('XPool', () => {
 
     it('should tolerate belated destruction of resources that timeout while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyDelay: 200 }]);
-      const pool = new Pool({ factory, minSize: 1, destroyTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 1, destroyTimeout: 100 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -350,7 +350,7 @@ describe('XPool', () => {
 
     it('should segregate resources that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }]);
-      const pool = new Pool({ factory, minSize: 1 });
+      const pool = new Pool({ factory, minPoolSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -376,7 +376,7 @@ describe('XPool', () => {
 
     it('should tolerate concurrent attempts to stop a pool', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new Pool({ factory, minSize: 1 });
+      const pool = new Pool({ factory, minPoolSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -392,7 +392,7 @@ describe('XPool', () => {
 
     it('should fail if the stop times out', async () => {
       const factory = new TestFactory([{ resource: 1, destroyDelay: 200 }]);
-      const pool = new Pool({ factory, minSize: 1, stopTimeout: 100 });
+      const pool = new Pool({ factory, minPoolSize: 1, stopTimeout: 100 });
 
       await pool.start();
       await rejects(() => pool.stop(), (error) => {
@@ -408,7 +408,7 @@ describe('XPool', () => {
 
     it('should use an idle resource if one is available', async () => {
       const factory = new TestFactory([{ resource: 1 }])
-      const pool = new Pool({ factory, minSize: 1 });
+      const pool = new Pool({ factory, minPoolSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
@@ -461,7 +461,7 @@ describe('XPool', () => {
 
     it('should wait until there is an idle resource if the pool is fully utilised', async () => {
       const factory = new TestFactory([{ resource: 1 }])
-      const pool = new Pool({ factory, maxSize: 1 });
+      const pool = new Pool({ factory, maxPoolSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource = await pool.acquire();
@@ -482,7 +482,7 @@ describe('XPool', () => {
 
     it('should reject if the maximum queue depth is exceeded', async () => {
       const factory = new TestFactory([{ resource: 1 }])
-      const pool = new Pool({ factory, maxSize: 1, maxQueueSize: 1 });
+      const pool = new Pool({ factory, maxPoolSize: 1, maxQueueSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
       const resource = await pool.acquire();
@@ -497,7 +497,7 @@ describe('XPool', () => {
         Events.RESOURCE_CREATED,
         Events.RESOURCE_ACQUIRED,
       ])
-    }, { exclusive: true });
+    });
 
     it('should retry on resource creation error', async () => {
       const factory = new TestFactory([{ createError: 'Oh Noes!' }, { resource: 2 }])
@@ -647,7 +647,7 @@ describe('XPool', () => {
 
     it('should remove queued requests if acquire times out', async () => {
       const factory = new TestFactory([{ resource: 1 }])
-      const pool = new Pool({ factory, maxSize: 1, acquireTimeout: 100 });
+      const pool = new Pool({ factory, maxPoolSize: 1, acquireTimeout: 100 });
 
       // Block the queue by acquiring the only resource
       await pool.acquire();
