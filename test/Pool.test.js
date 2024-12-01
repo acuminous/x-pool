@@ -814,6 +814,44 @@ describe('XPool', () => {
         Events.RESOURCE_RELEASED,
       ])
     })
+
+    it('should maintain the minimum pool size even with concurrent destroys', async () => {
+      const factory = new TestFactory([{ resource: 1, destroyDelay: 100 }, { resource: 2, destroyDelay: 100 }, { resource: 3, destroyDelay: 100 }, { resource: 4 }, { resource: 5 }, { resource: 6 }])
+      const pool = new Pool({ factory, minPoolSize: 3 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+
+      PromiseUtils.times(3, async () => {
+        const resource = await pool.acquire();
+        pool.destroy(resource);
+      });
+
+      await scheduler.wait(500)
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:3, acquired:0, doomed:0, segregated:0, size: 3 });
+    })
+
+    it('should tolerate errors refilling the pool', async () => {
+      const factory = new TestFactory([{ resource: 1 }, { resource: 2, createError: 200 }, { resource: 2 }])
+      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
+      const eventLog = new EventLog(pool, Object.values(Events));
+
+      await pool.start();
+      const resource = await pool.acquire();
+      await pool.destroy(resource);
+
+      eq(pool.stats(), { queued:0, initialising: 0, idle:1, acquired:0, doomed:0, segregated:0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_ACQUIRED,
+        Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ])
+    })
   })
 
   describe('stats', () => {
