@@ -10,3 +10,4 @@
 - Resources which timeout during acquision but not creation/validation are currently moved to segregated. This means we will not wait for them to be created when stopping the pool. We might need another "ward" for commands that haven't timed out yet when the start/acquire/stop timesous
 - Check factory destroy is actually called from tests
 - Kill pool when an event listener throws an error instead of emitting an error
+- Make config flat, e.g. backoffInitialValue, backoffMaxValue, backoffFactor
