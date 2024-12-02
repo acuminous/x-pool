@@ -1,5 +1,5 @@
 const { describe, it } = require('zunit');
-const { ok, deepStrictEqual: eq, rejects, fail } = require('node:assert');
+const { deepStrictEqual: eq, rejects, fail } = require('node:assert');
 const { scheduler } = require('node:timers/promises');
 const { Pool, Events } = require('..');
 const PromiseUtils = require('../lib/utils/PromiseUtils');
@@ -531,7 +531,7 @@ describe('XPool', () => {
       const pool = new Pool({ factory, maxPoolSize: 1, maxQueueSize: 1 });
       const eventLog = new EventLog(pool, Object.values(Events));
 
-      const resource = await pool.acquire();
+      await pool.acquire();
       pool.acquire();
       await rejects(() => pool.acquire(), (error) => {
         eq(error.message, 'Maximum queue size of 1 exceeded');
@@ -548,10 +548,9 @@ describe('XPool', () => {
     it('should default to no maximum queue depth', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, maxPoolSize: 1 });
-      const eventLog = new EventLog(pool, Object.values(Events));
 
-      const resource = await pool.acquire();
-      const list = PromiseUtils.times(1000, async () => {
+      await pool.acquire();
+      PromiseUtils.times(1000, async () => {
         pool.acquire();
       });
 
@@ -725,7 +724,7 @@ describe('XPool', () => {
       const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
-      const resource = await pool.acquire();
+      await pool.acquire();
 
       await scheduler.wait(100);
 
@@ -886,7 +885,6 @@ describe('XPool', () => {
     it('should maintain the minimum pool size even with concurrent destroys', async () => {
       const factory = new TestFactory([{ resource: 1, destroyDelay: 100 }, { resource: 2, destroyDelay: 100 }, { resource: 3, destroyDelay: 100 }, { resource: 4 }, { resource: 5 }, { resource: 6 }]);
       const pool = new Pool({ factory, minPoolSize: 3 });
-      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
 
@@ -945,10 +943,9 @@ describe('XPool', () => {
     it('should yield synchronous function result', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, minPoolSize: 1 });
-      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
-      const result = await pool.with((resource) => 'ok');
+      const result = await pool.with(() => 'ok');
 
       eq(result, 'ok');
     });
@@ -956,10 +953,9 @@ describe('XPool', () => {
     it('should yield asynchronous function result', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, minPoolSize: 1 });
-      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
-      const result = await pool.with(async (resource) => Promise.resolve('ok'));
+      const result = await pool.with(async () => Promise.resolve('ok'));
 
       eq(result, 'ok');
     });
@@ -967,10 +963,9 @@ describe('XPool', () => {
     it('should reject errors thrown by the function', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, minPoolSize: 1 });
-      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
-      await rejects(() => pool.with(async (resource) => {
+      await rejects(() => pool.with(async () => {
         throw new Error('Oh Noes!');
       }), (error) => {
         eq(error.message, 'Oh Noes!');
@@ -981,10 +976,9 @@ describe('XPool', () => {
     it('should timeout', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }]);
       const pool = new Pool({ factory, acquireTimeout: 100 });
-      const eventLog = new EventLog(pool, Object.values(Events));
 
       await pool.start();
-      await rejects(() => pool.with(async (resource) => {
+      await rejects(() => pool.with(async () => {
         fail('Should have timed out');
       }), (error) => {
         eq(error.message, 'Failed to acquire resource within 100ms');
@@ -997,7 +991,6 @@ describe('XPool', () => {
 
     it('should provide empty statistics', () => {
       const pool = new Pool();
-      const stats = pool.stats();
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
     });
   });
