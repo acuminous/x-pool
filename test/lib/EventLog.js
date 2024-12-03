@@ -1,9 +1,11 @@
+const { Events } = require('../..');
+
 class EventLog {
   #events = [];
 
   #payloads = [];
 
-  constructor(emitter, candidates) {
+  constructor(emitter, candidates = Object.values(Events)) {
     if (this.#hasDuplicates(candidates)) throw new Error(`Candidate events contains duplicates: [${this.#findDuplicates(candidates).join(', ')}]`);
     candidates.forEach((event) => {
       emitter.on(event, (...args) => {
