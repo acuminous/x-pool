@@ -11,3 +11,4 @@
 - Check factory destroy is actually called from tests
 - Kill pool when an event listener throws an error instead of emitting an error
 - Make config flat, e.g. backoffInitialValue, backoffMaxValue, backoffFactor
+- Consider putting checkQueue / checkPool in a setImmediate
