@@ -531,8 +531,12 @@ describe('XPool', () => {
       const pool = new Pool({ factory, maxPoolSize: 1, maxQueueSize: 1 });
       const eventLog = new EventLog(pool);
 
+      // Acquire 1 is dispatched
+      // Acquire 2 will be queued, eventually timing out because Acquire 1 is never released
+      // Acquire 3 should be rejected because the maximum queue size would be exceeded
+
       await pool.acquire();
-      pool.acquire();
+      pool.acquire().catch(() => {});
       await rejects(() => pool.acquire(), (error) => {
         eq(error.message, 'Maximum queue size of 1 exceeded');
         return true;
@@ -549,12 +553,15 @@ describe('XPool', () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, maxPoolSize: 1 });
 
-      await pool.acquire();
-      PromiseUtils.times(1000, async () => {
-        pool.acquire();
+      const resource = await pool.acquire();
+      const done = PromiseUtils.times(1000, async () => {
+        const resource = await pool.acquire();
+        await pool.release(resource);
       });
 
       eq(pool.stats(), { queued: 1000, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+      pool.release(resource);
+      await done;
     });
 
     it('should retry on resource creation error', async () => {
@@ -684,7 +691,7 @@ describe('XPool', () => {
       });
     });
 
-    it('should segregate then destroy resources created belatedly after the acquire timeout', async () => {
+    it('should segregate then destroy resources created belatedly after the acquire times out', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }]);
       const pool = new Pool({ factory, acquireTimeout: 100 });
       const eventLog = new EventLog(pool);
@@ -716,6 +723,30 @@ describe('XPool', () => {
       });
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+    });
+
+    it('should check for other queued requests after the acquire times out', async () => {
+      const factory = new TestFactory([{ resource: 1, createDelay: 600 }, { resource: 2, createDelay: 100 }]);
+      const pool = new Pool({ factory, maxPoolSize: 1, acquireTimeout: 500 });
+      const eventLog = new EventLog(pool);
+
+      // T+0ms first acquire is queued
+      // T+300ms second acquire is queued
+      // T+500ms first acquire times out & aborts, second acquire is dispatched
+      // T+600ms second acquire is fulfilled
+
+      pool.acquire().catch(() => {});
+      await scheduler.wait(300);
+      const resource = await pool.acquire();
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
+      ]);
     });
 
     it('should maintain the minimum number of idle resources', async () => {
