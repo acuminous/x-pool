@@ -1,26 +1,23 @@
 const { Events } = require('../..');
 
 class EventLog {
-  #events = [];
-
-  #payloads = [];
+  #records = [];
 
   constructor(emitter, candidates = Object.values(Events)) {
     if (this.#hasDuplicates(candidates)) throw new Error(`Candidate events contains duplicates: [${this.#findDuplicates(candidates).join(', ')}]`);
     candidates.forEach((event) => {
       emitter.on(event, (...args) => {
-        this.#events.push(event);
-        this.#payloads.push(args);
+        this.#records.push({ event, payload: args, timestamp: Date.now() });
       });
     });
   }
 
   get events() {
-    return this.#events;
+    return this.#records.map(({ event }) => event);
   }
 
-  get payloads() {
-    return this.#payloads;
+  get records() {
+    return this.#records;
   }
 
   #hasDuplicates(candidates) {

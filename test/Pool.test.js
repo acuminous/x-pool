@@ -75,6 +75,26 @@ describe('XPool', () => {
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
     });
 
+    it('should create not exceed the default max concurrency', async () => {
+      const factory = new TestFactory(Array.from({ length: 6 }, (_, index) => ({ resource: index, createDelay: 200 })));
+      const pool = new Pool({ factory, minPoolSize: 6 });
+      const eventLog = new EventLog(pool);
+
+      await tmin(() => pool.start(), 400)
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
+    });
+
+    it('should create not exceed the specified max concurrency', async () => {
+      const factory = new TestFactory(Array.from({ length: 6 }, (_, index) => ({ resource: index, createDelay: 200 })));
+      const pool = new Pool({ factory, minPoolSize: 6, maxConcurrency: 2 });
+      const eventLog = new EventLog(pool);
+
+      await tmin(() => pool.start(), 600)
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
+    });
+
     it('should tolerate errors creating resources', async () => {
       const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }]);
       const pool = new Pool({ factory, minPoolSize: 2 });
@@ -350,8 +370,9 @@ describe('XPool', () => {
         events.push(Events.RESOURCE_ACQUIRED, Events.RESOURCE_RELEASED);
         const resource = await pool.acquire();
         setTimeout(() => pool.release(resource), 100);
+      }).then(() => {
+        events.push(Events.RESOURCE_DESTROYED);
       });
-      events.push(Events.RESOURCE_DESTROYED);
 
       await pool.stop();
 
@@ -559,6 +580,8 @@ describe('XPool', () => {
         await pool.release(resource);
       });
 
+      await scheduler.wait(100);
+
       eq(pool.stats(), { queued: 1000, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
       pool.release(resource);
       await done;
@@ -593,9 +616,9 @@ describe('XPool', () => {
         Events.RESOURCE_CREATION_TIMEOUT,
         Events.RESOURCE_SEGREGATED,
         Events.RESOURCE_CREATED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_CREATED,
         Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_ACQUIRED,
       ]);
     });
 
