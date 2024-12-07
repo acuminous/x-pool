@@ -1,16 +1,5 @@
-
 ### TODO
 - initialPoolSize (can be less than min for quick start, but must be less than or equal to max). Used to size the pool on startup
-- background
-- resourceImmunityThreshold
-- resourceDormant
-- validateOnAcquire
-  - Always (create and idle)
-  - Idle (just idle)
-  - Dormant (when idle for longer than the 'resourceInactivityThreshold') 
-  - Never
-- destroyOnDormant
-
 - Resource validation
 - Resource reset
 - autoStart
