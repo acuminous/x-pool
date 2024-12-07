@@ -95,28 +95,94 @@ describe('XPool', () => {
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
     });
 
-    it('should tolerate errors creating resources', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }]);
-      const pool = new Pool({ factory, minPoolSize: 2 });
-
-      await pool.start();
-
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
-    });
-
-    it('should report errors creating resources', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { createError: 'Oh Noes!' }, { resource: 3 }]);
-      const pool = new Pool({ factory, minPoolSize: 2 });
+    it('should handle errors creating resources', async () => {
+      const factory = new TestFactory([{ resource: 1, createError: 'Oh Noes!' }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1 });
       const eventLog = new EventLog(pool);
 
       await pool.start();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+    });
+
+    it('should validate resources when configuration specifies ALWAYS', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
       eq(eventLog.events, [
         Events.RESOURCE_CREATED,
-        Events.RESOURCE_CREATION_ERROR,
+        Events.RESOURCE_VALIDATED,
         Events.RESOURCE_RELEASED,
+      ]);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+    });
+
+    it('should validate resources when configuration specifies CREATE', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validation: 'CREATE' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      eq(eventLog.events, [
         Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+    })
+
+    it('should skip resource validation when configuration specifies NEVER', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validation: 'NEVER' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+    });
+
+    it('should skip resource validation when configuration specifies IDLE', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validation: 'IDLE' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
+      ]);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+    })
+
+    it('should handle errors validating resources', async () => {
+      const factory = new TestFactory([{ resource: 1, validateError: 'Oh Noes!' }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTROYED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATED,
         Events.RESOURCE_RELEASED,
       ]);
     });
@@ -181,27 +247,20 @@ describe('XPool', () => {
     });
 
     it('should segregate and eventually destroy resources created belatedly that timeout while being destroyed', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200 }, { resource: 3 }]);
-      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, destroyTimeout: 100 });
-
-      const eventLog = new EventLog(pool, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_CREATION_TIMEOUT,
-        Events.RESOURCE_SEGREGATED,
-        Events.RESOURCE_DESTRUCTION_TIMEOUT,
-        Events.RESOURCE_DESTROYED,
-      ]);
+      const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, createTimeout: 100, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool);
 
       await pool.start();
       await scheduler.wait(500);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
         Events.RESOURCE_CREATION_TIMEOUT,
         Events.RESOURCE_SEGREGATED,
         Events.RESOURCE_CREATED,
         Events.RESOURCE_CREATED,
+        Events.RESOURCE_RELEASED,
         Events.RESOURCE_DESTRUCTION_TIMEOUT,
         Events.RESOURCE_SEGREGATED,
         Events.RESOURCE_DESTROYED,
@@ -209,17 +268,15 @@ describe('XPool', () => {
     });
 
     it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }]);
-      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, backoffMaxValue: 0 });
+      const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, createTimeout: 100, backoffMaxValue: 0 });
       const eventLog = new EventLog(pool);
 
       await pool.start();
       await scheduler.wait(300);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 1, size: 3 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
         Events.RESOURCE_CREATION_TIMEOUT,
         Events.RESOURCE_SEGREGATED,
         Events.RESOURCE_CREATED,
@@ -231,22 +288,110 @@ describe('XPool', () => {
     });
 
     it('should permanently segregate resources created belatedly that timeout then error while being destroyed', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 3 }]);
-      const pool = new Pool({ factory, minPoolSize: 2, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
+      const factory = new TestFactory([{ resource: 1,createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
       const eventLog = new EventLog(pool);
 
       await pool.start();
       await scheduler.wait(500);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 1, size: 3 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
         Events.RESOURCE_CREATION_TIMEOUT,
         Events.RESOURCE_SEGREGATED,
         Events.RESOURCE_CREATED,
         Events.RESOURCE_RELEASED,
         Events.RESOURCE_CREATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+      ]);
+    });
+
+    it('should segregate then destroy resources validated belatedly', async () => {
+      const factory = new TestFactory([{ resource: 1, validateDelay: 200 }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validateTimeout: 100, backoffMaxValue: 0, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_DESTROYED,
+      ]);
+    });
+
+    it('should segregate and eventually destroy resources validated belatedly that timeout while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_DESTRUCTION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_DESTROYED,
+      ]);
+    });
+
+    it('should permanently segregate resources validated belatedly that error while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validateTimeout: 100, backoffMaxValue: 0, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_DESTRUCTION_ERROR,
+        Events.RESOURCE_SEGREGATED,
+      ]);
+    });
+
+    it('should permanently segregate resources validated belatedly that timeout then error while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await pool.start();
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATION_TIMEOUT,
+        Events.RESOURCE_SEGREGATED,
+        Events.RESOURCE_CREATED,
+        Events.RESOURCE_VALIDATED,
+        Events.RESOURCE_RELEASED,
+        Events.RESOURCE_VALIDATED,
         Events.RESOURCE_DESTRUCTION_TIMEOUT,
         Events.RESOURCE_SEGREGATED,
         Events.RESOURCE_DESTRUCTION_ERROR,
@@ -264,7 +409,7 @@ describe('XPool', () => {
       eq(eventLog.events, []);
     });
 
-    it('should reject if the start times out', async () => {
+    it('should reject if the start times out during resource creation', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }]);
       const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
 
@@ -274,7 +419,7 @@ describe('XPool', () => {
       });
     });
 
-    it('should segregate resources created belatedly if start times out', async () => {
+    it('should segregate resources created belatedly if start times out during resource creation', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 200 }]);
       const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
       const eventLog = new EventLog(pool);
@@ -286,6 +431,33 @@ describe('XPool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
+        Events.RESOURCE_SEGREGATED,
+      ]);
+    });
+
+    it('should reject if the start times out during resource validation', async () => {
+      const factory = new TestFactory([{ resource: 1, validateDelay: 200 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100, validation: 'ALWAYS' });
+
+      await rejects(() => pool.start(), (error) => {
+        eq(error.message, 'Failed to start pool within 100ms');
+        return true;
+      });
+    });
+
+    it('should segregate resources created belatedly if start times out during resource validation', async () => {
+      const factory = new TestFactory([{ resource: 1, validateDelay: 200 }]);
+      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100, validation: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      await rejects(() => pool.start(), (error) => {
+        eq(error.message, 'Failed to start pool within 100ms');
+        return true;
+      });
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+      eq(eventLog.events, [
+        Events.RESOURCE_CREATED,
         Events.RESOURCE_SEGREGATED,
       ]);
     });

@@ -19,6 +19,13 @@ class TestFactory {
     return d.resource;
   }
 
+  async validate(pool, resource) {
+    const d = this.findDefinition(resource);
+    d.validated = new Date();
+    if (d.validateDelay) await scheduler.wait(d.validateDelay);
+    if (d.validateError) throw d.validateError instanceof Error ? d.validateError : new Error(d.validateError);
+  }
+
   async destroy(pool, resource) {
     const d = this.findDefinition(resource);
     d.destroyed = new Date();
@@ -27,7 +34,9 @@ class TestFactory {
   }
 
   findDefinition(resource) {
-    return this.#definitions.find((d) => d.resource === resource);
+    const d = this.#definitions.find((d) => d.resource === resource);
+    if (!d) throw new Error('Resource not found', resource);
+    return d;
   }
 }
 
