@@ -5,7 +5,7 @@ const { Pool, Events } = require('..');
 const PromiseUtils = require('../lib/utils/PromiseUtils');
 const TestFactory = require('./lib/TestFactory');
 const EventLog = require('./lib/EventLog');
-const { takesAtLeast: tmin, takesAtMost: tmax } = require('./lib/custom-assertions');
+const { takesAtLeast: tmin } = require('./lib/custom-assertions');
 
 describe('Pool', () => {
 
@@ -91,9 +91,8 @@ describe('Pool', () => {
       it('should not exceed the default max concurrency', async () => {
         const factory = new TestFactory(Array.from({ length: 6 }, (_, index) => ({ resource: index, createDelay: 200 })));
         const pool = new Pool({ factory, minPoolSize: 6 });
-        const eventLog = new EventLog(pool);
 
-        await tmin(() => pool.start(), 400)
+        await tmin(() => pool.start(), 400);
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
       });
@@ -101,9 +100,8 @@ describe('Pool', () => {
       it('should not exceed the specified max concurrency', async () => {
         const factory = new TestFactory(Array.from({ length: 6 }, (_, index) => ({ resource: index, createDelay: 200 })));
         const pool = new Pool({ factory, minPoolSize: 6, maxConcurrency: 2 });
-        const eventLog = new EventLog(pool);
 
-        await tmin(() => pool.start(), 600)
+        await tmin(() => pool.start(), 600);
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
       });
@@ -224,7 +222,7 @@ describe('Pool', () => {
       });
 
       it('should permanently segregate resources created belatedly that timeout then error while being destroyed', async () => {
-        const factory = new TestFactory([{ resource: 1,createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
+        const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new Pool({ factory, minPoolSize: 1, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
 
@@ -274,7 +272,7 @@ describe('Pool', () => {
         ]);
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
-      })
+      });
 
       it('should not validate created resources when configuration specifies IDLE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
@@ -288,7 +286,7 @@ describe('Pool', () => {
           Events.RESOURCE_CREATED,
           Events.RESOURCE_RELEASED,
         ]);
-      })
+      });
 
       it('should not validate created resource when configuration specifies NEVER', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
@@ -735,7 +733,7 @@ describe('Pool', () => {
           Events.RESOURCE_CREATED,
           Events.RESOURCE_RELEASED,
         ]);
-      })
+      });
     });
 
     describe('resource creation', () => {
@@ -1025,7 +1023,7 @@ describe('Pool', () => {
           Events.RESOURCE_VALIDATED,
           Events.RESOURCE_ACQUIRED,
         ]);
-      })
+      });
 
       it('should not validate idle resources when configuration specifies CREATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
@@ -1042,7 +1040,7 @@ describe('Pool', () => {
           Events.RESOURCE_RELEASED,
           Events.RESOURCE_ACQUIRED,
         ]);
-      })
+      });
 
       it('should not validate created resources when configuration specifies IDLE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
@@ -1057,7 +1055,7 @@ describe('Pool', () => {
           Events.RESOURCE_CREATED,
           Events.RESOURCE_ACQUIRED,
         ]);
-      })
+      });
 
       it('should validate idle resources when configuration specifies IDLE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
@@ -1074,7 +1072,7 @@ describe('Pool', () => {
           Events.RESOURCE_VALIDATED,
           Events.RESOURCE_ACQUIRED,
         ]);
-      })
+      });
 
       it('should not validate created resources when configuration specifies NEVER', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
@@ -1365,7 +1363,7 @@ describe('Pool', () => {
 
         pool.acquire().catch(() => {});
         await scheduler.wait(300);
-        const resource = await pool.acquire();
+        await pool.acquire();
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
