@@ -14,4 +14,4 @@
 - Kill pool when an event listener throws an error instead of emitting an error
 - Make release & destroy synchronous (from the users' perspective), and consider putting checkQueue / checkPool in a setImmediate
 - Rename Requests AsyncRequest (as they have a latch, and yield)
-
+- Make Validate values a Symbol (possibly using yup to convert from strings)
