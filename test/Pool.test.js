@@ -1,4 +1,4 @@
-const { describe, it } = require('zunit');
+const { describe, it, afterEach } = require('zunit');
 const { deepStrictEqual: eq, rejects, fail } = require('node:assert');
 const { scheduler } = require('node:timers/promises');
 const { Pool, Events } = require('..');
@@ -511,6 +511,10 @@ describe('Pool', () => {
 
   describe('stop', () => {
 
+    afterEach(async () => {
+      await scheduler.wait(500);
+    })
+
     it('should wait for the pool to finish initialising', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 100 }, { resource: 2, createDelay: 100 }, { resource: 3, createDelay: 100 }]);
       const pool = new Pool({ factory, minPoolSize: 3 });
@@ -584,13 +588,15 @@ describe('Pool', () => {
       await pool.start();
 
       const events = [Events.RESOURCE_CREATED, Events.RESOURCE_RELEASED];
-      PromiseUtils.times(10, async () => {
+      PromiseUtils.times(11, async () => {
         events.push(Events.RESOURCE_ACQUIRED, Events.RESOURCE_RELEASED);
         const resource = await pool.acquire();
         setTimeout(() => pool.release(resource), 100);
       }).then(() => {
         events.push(Events.RESOURCE_DESTROYED);
       });
+
+      await scheduler.wait(50);
 
       await pool.stop();
 
@@ -1498,6 +1504,8 @@ describe('Pool', () => {
       const resource = await pool.acquire();
       await pool.destroy(resource);
 
+      await scheduler.wait(100);
+
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [
         Events.RESOURCE_CREATED,
@@ -1526,13 +1534,15 @@ describe('Pool', () => {
     });
 
     it('should tolerate errors refilling the pool', async () => {
-      const factory = new TestFactory([{ resource: 1 }, { resource: 2, createError: 200 }, { resource: 2 }]);
-      const pool = new Pool({ factory, minPoolSize: 1, startTimeout: 100 });
+      const factory = new TestFactory([{ resource: 1 }, { resource: 2, createError: 'Oh Noes!' }, { resource: 3 }]);
+      const pool = new Pool({ factory, minPoolSize: 1 });
       const eventLog = new EventLog(pool);
 
       await pool.start();
       const resource = await pool.acquire();
       await pool.destroy(resource);
+
+      await scheduler.wait(300);
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [

@@ -1,6 +1,5 @@
 ### TODO
 - initialPoolSize (can be less than min for quick start, but must be less than or equal to max). Used to size the pool on startup
-- Signal drain queue when dispatched queue is empty rather than queued queue
 - Resource reset
 - autoStart
 - Reap Idle resources
