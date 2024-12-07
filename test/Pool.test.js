@@ -856,7 +856,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, minPoolSize: 0 });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await tmin(async () => {
           await pool.acquire();
         }, 100 + 200 + 400);
@@ -876,7 +875,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, backoffInitialValue: 50, backoffFactor: 1.5, backoffMaxValue: 100 });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await tmin(async () => {
           await pool.acquire();
         }, 50 + 75 + 100);
@@ -980,7 +978,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await pool.acquire();
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
@@ -1014,7 +1011,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, validate: 'CREATE' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await pool.acquire();
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
@@ -1047,7 +1043,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, validate: 'IDLE' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await pool.acquire();
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
@@ -1079,7 +1074,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, validate: 'NEVER' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await pool.acquire();
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
@@ -1110,7 +1104,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await pool.acquire();
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
@@ -1130,7 +1123,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await tmin(async () => {
           await pool.acquire();
         }, 100 + 200 + 400);
@@ -1160,7 +1152,6 @@ describe('Pool', () => {
         const pool = new Pool({ factory, backoffInitialValue: 50, backoffFactor: 1.5, backoffMaxValue: 100, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
 
-        await pool.start();
         await tmin(async () => {
           await pool.acquire();
         }, 50 + 75 + 100);
