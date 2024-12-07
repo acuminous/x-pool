@@ -513,7 +513,7 @@ describe('Pool', () => {
 
     afterEach(async () => {
       await scheduler.wait(500);
-    })
+    });
 
     it('should wait for the pool to finish initialising', async () => {
       const factory = new TestFactory([{ resource: 1, createDelay: 100 }, { resource: 2, createDelay: 100 }, { resource: 3, createDelay: 100 }]);
