@@ -11,7 +11,7 @@ describe('Repository', () => {
     throws(() => repository.extend(), (error) => {
       eq(error.message, 'XPool has encountered an error. Please report this via https://github.com/acuminous/x-pool/issues');
       eq(error.isXPoolError, true);
-      eq(error.cause.message, `Cannot extend beyond the maximum pool size of 1`);
+      eq(error.cause.message, 'Cannot extend beyond the maximum pool size of 1');
       return true;
     });
   });

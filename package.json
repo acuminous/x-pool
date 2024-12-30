@@ -5,19 +5,26 @@
   "main": "index.js",
   "scripts": {
     "test": "zUnit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint-staged": "lint-staged",
+    "prepare": "husky"
   },
   "author": "Stephen Cresswell",
   "license": "ISC",
   "dependencies": {
     "debug": "^4.3.7",
-    "eslint-config-airbnb-base": "^15.0.0",
     "fwd": "^0.2.2"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
     "seedrandom": "^3.0.5",
     "zunit": "^4.0.2"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix"
   },
   "directories": {
     "lib": "lib",

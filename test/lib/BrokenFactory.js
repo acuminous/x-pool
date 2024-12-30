@@ -7,17 +7,17 @@ class BrokenFactory {
     throw new Error('Factory Error');
   }
 
-  async validate(pool, resource) {
+  async validate() {
     await scheduler.wait(100);
     throw new Error('Factory Error');
   }
 
-  async reset(pool, resource) {
+  async reset() {
     await scheduler.wait(100);
     throw new Error('Factory Error');
   }
 
-  async destroy(pool, resource) {
+  async destroy() {
     await scheduler.wait(100);
     throw new Error('Factory Error');
   }

@@ -5,7 +5,7 @@ const seedrandom = require('seedrandom');
 const ReliableFactory = require('./lib/ReliableFactory');
 const UnreliableFactory = require('./lib/UnreliableFactory');
 const BrokenFactory = require('./lib/BrokenFactory');
-const { Pool, Events } = require('..');
+const { Pool } = require('..');
 
 const seed = Math.floor(Math.random() * 1000);
 

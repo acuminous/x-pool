@@ -7,16 +7,16 @@ class ReliableFactory {
     return 1;
   }
 
-  async validate(pool, resource) {
+  async validate() {
     await scheduler.wait(100);
     return true;
   }
 
-  async reset(pool, resource) {
+  async reset() {
     await scheduler.wait(100);
   }
 
-  async destroy(pool, resource) {
+  async destroy() {
     await scheduler.wait(100);
   }
 }

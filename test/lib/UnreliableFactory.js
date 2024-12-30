@@ -6,15 +6,15 @@ class UnreliableFactory {
     return operation(1);
   }
 
-  async validate(pool, resource) {
+  async validate() {
     await operation();
   }
 
-  async reset(pool, resource) {
+  async reset() {
     await operation();
   }
 
-  async destroy(pool, resource) {
+  async destroy() {
     await operation();
   }
 }
@@ -22,11 +22,11 @@ class UnreliableFactory {
 function operation(result) {
   return new Promise((resolve, reject) => {
     const delay = shouldFail() ? 2000 : getDelay(100, 200);
-    scheduler.wait(getDelay(100, 200)).then(() => {
+    scheduler.wait(delay).then(() => {
       if (shouldFail()) return reject(new Error('Factory Error'));
       resolve(result);
-    })
-  })
+    });
+  });
 }
 
 module.exports = UnreliableFactory;
