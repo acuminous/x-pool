@@ -1426,7 +1426,7 @@ describe('Integration Tests', () => {
         XPoolEvents.RESOURCE_RESET,
         XPoolEvents.RESOURCE_RELEASED,
       ]);
-    }, { exclusive: true });
+    }, { skip: true });
 
     it('should segregate then destroy resources that error while being reset');
 

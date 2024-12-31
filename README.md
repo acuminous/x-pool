@@ -19,7 +19,7 @@ Add config for
   maxIdleDuration: Infinity,
   immunityDuration: 60000,
 
-Check if bay metadata is used / what metadata might be useful
+Check if bay metadata is used / what metadata might be useful. Currently some state transitions are routed through the bay, where they update metadata, others are made directly from the state, and so bypass the bay metadata.
 
 use debug.extend() with bays and requests
 
