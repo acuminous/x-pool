@@ -23,8 +23,4 @@ Check if bay metadata is used / what metadata might be useful. Currently some st
 
 use debug.extend() with bays and requests
 
-Try to come up with a better name for UnvalidatedState
-
 Can resource.destroy move to doomed state, then call destroy?
-
-Currently, reserving a bay moves it to unvalidated state. When culling bays, the idle ones are reserved, then destroyed. This means we need a destroy method on the unvalidated state, which while correct, is a bit confusing. I would prefer if the reserve logic was smarter so it conditionally transitions to Ready when validation is not required.
