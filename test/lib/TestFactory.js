@@ -26,6 +26,13 @@ class TestFactory {
     if (d.validateError) throw d.validateError instanceof Error ? d.validateError : new Error(d.validateError);
   }
 
+  async reset(pool, resource) {
+    const d = this.findDefinition(resource);
+    d.reset = new Date();
+    if (d.resetDelay) await scheduler.wait(d.resetDelay);
+    if (d.resetError) throw d.resetError instanceof Error ? d.resetError : new Error(d.resetError);
+  }
+
   async destroy(pool, resource) {
     const d = this.findDefinition(resource);
     d.destroyed = new Date();

@@ -11,4 +11,17 @@
 - Check factory destroy is actually called from tests
 - Kill pool when an event listener throws an error instead of emitting an error
 - Rename Requests AsyncRequest (as they have a latch, and yield)
-- Make Validate values a Symbol (possibly using yup to convert from strings)
+- Make Validate configuration options a Symbol (possibly using yup to convert from strings)
+
+
+Add config for
+  validationInterval: Infinity,
+  maxIdleDuration: Infinity,
+  immunityDuration: 60000,
+
+Check if bay metadata is used / what metadata might be useful
+
+use debug.extend() with bays and requests
+
+Rename Pending to indicate it is about creating a resource
+Try to come up with a better name for UnvalidatedState

@@ -898,7 +898,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should segregate then destroy resources created belatedly', async () => {
+      it('should segregate then destroy resources that timeout, then are created belatedly', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200 }, { resource: 2 }]);
         const pool = new XPool({ factory, createTimeout: 100, backoffMaxValue: 100 });
         const eventLog = new EventLog(pool);
@@ -917,7 +917,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should segregate then destroy resources created belatedly that timeout when being destroyed', async () => {
+      it('should segregate then destroy resources that timeout, then are created belatedly, but then timeout when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
         const pool = new XPool({ factory, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -938,7 +938,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources created belatedly that error when being destroyed', async () => {
+      it('should permanently segregate resources that timeout, then are created belatedly, but then error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, createTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -958,7 +958,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources created belatedly that timeout then error when being destroyed', async () => {
+      it('should permanently segregate resources that timeout, then are created belatedly, but then timeout and error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -1185,7 +1185,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should segregate then destroy resources validated belatedly', async () => {
+      it('should segregate then destroy resources that timeout, then are validated belatedly', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200 }, { resource: 2 }]);
         const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 100, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -1206,7 +1206,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should segregate then destroy resources validated belatedly that timeout when being destroyed', async () => {
+      it('should segregate then destroy resources that timeout, then are validated belatedly, but thne timeout when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
         const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -1229,7 +1229,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources validated belatedly that error when being destroyed', async () => {
+      it('should permanently segregate resources that timeout, then are validated belatedly, but that error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -1251,7 +1251,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources validated belatedly that timeout then error when being destroyed', async () => {
+      it('should permanently segregate resources that timeout, then are validated belatedly, but that timeout and error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -1409,6 +1409,36 @@ describe('Integration Tests', () => {
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
       eq(eventLog.events, []);
     });
+
+    it('should reset resources before returning them to the pool when configured', async () => {
+     const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET,
+        XPoolEvents.RESOURCE_RELEASED,
+      ]);
+    }, { exclusive: true });
+
+    it('should segregate then destroy resources that error while being reset');
+
+    it('should segregate then destroy resources that timeout, then error while being reset');
+
+    it('should segregate then destroy resources that timeout, then reset belatedly');
+
+    it('should segregate then destroy resources that timeout, then reset belatedly, but timeout while being destroyed');
+
+    it('should permanently segregate resources that timeout, then reset belatedly, but error when being destroyed');
+
+    it('should permanently segregate resources that timeout, then reset belatedly, but timeout, then error when being destroyed');
   });
 
   describe('destroy', () => {
