@@ -64,7 +64,7 @@ describe('Integration Tests', () => {
 
       await pool.start();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, []);
     });
 
@@ -76,7 +76,7 @@ describe('Integration Tests', () => {
 
         await pool.start();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 0 });
       });
 
       it('should create the specified minimum number of idle resources', async () => {
@@ -85,7 +85,7 @@ describe('Integration Tests', () => {
 
         await pool.start();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 0 });
       });
 
       it('should not exceed the default max concurrency', async () => {
@@ -94,7 +94,7 @@ describe('Integration Tests', () => {
 
         await tmin(() => pool.start(), 400);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6, zombie: 0 });
       });
 
       it('should not exceed the specified max concurrency', async () => {
@@ -103,7 +103,7 @@ describe('Integration Tests', () => {
 
         await tmin(() => pool.start(), 600);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 6, acquired: 0, doomed: 0, segregated: 0, size: 6, zombie: 0 });
       });
 
       it('should retry on resource creation errors', async () => {
@@ -113,7 +113,7 @@ describe('Integration Tests', () => {
 
         await pool.start();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATED,
@@ -130,7 +130,7 @@ describe('Integration Tests', () => {
           await pool.start();
         }, 100 + 200 + 400);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -149,7 +149,7 @@ describe('Integration Tests', () => {
           await pool.start();
         }, 50 + 75 + 100);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -167,7 +167,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -188,7 +188,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -201,7 +201,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
+      it('should zombie resources created belatedly that error while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, minPoolSize: 1, createTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -209,7 +209,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -217,11 +217,10 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_RELEASED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
-      it('should permanently segregate resources created belatedly that timeout then error while being destroyed', async () => {
+      it('should zombie resources created belatedly that timeout then error while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, minPoolSize: 1, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -229,7 +228,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -251,7 +250,7 @@ describe('Integration Tests', () => {
         const eventLog = new EventLog(pool);
 
         await pool.start();
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -271,7 +270,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_RELEASED,
         ]);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       });
 
       it('should not validate created resources when configuration specifies IDLE', async () => {
@@ -281,7 +280,7 @@ describe('Integration Tests', () => {
 
         await pool.start();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -295,7 +294,7 @@ describe('Integration Tests', () => {
 
         await pool.start();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -309,7 +308,7 @@ describe('Integration Tests', () => {
 
         await pool.start();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
@@ -329,7 +328,7 @@ describe('Integration Tests', () => {
           await pool.start();
         }, 100 + 200 + 400);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
@@ -355,7 +354,7 @@ describe('Integration Tests', () => {
           await pool.start();
         }, 50 + 75 + 100);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
@@ -380,7 +379,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -395,7 +394,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources validated belatedly that error while being destroyed', async () => {
+      it('should zombie resources validated belatedly that error while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -403,7 +402,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -413,11 +412,10 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_RELEASED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
-      it('should permanently segregate resources validated belatedly that timeout then error while being destroyed', async () => {
+      it('should zombie resources validated belatedly that timeout then error while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -425,7 +423,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -463,7 +461,7 @@ describe('Integration Tests', () => {
           return true;
         });
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATION_ABANDONED,
@@ -492,7 +490,7 @@ describe('Integration Tests', () => {
 
         await scheduler.wait(200);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -517,7 +515,7 @@ describe('Integration Tests', () => {
       pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
     });
 
     it('should reject subsequent acquisition requests', async () => {
@@ -532,7 +530,7 @@ describe('Integration Tests', () => {
         return true;
       });
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
     });
 
     it('should destroy idle resources', async () => {
@@ -543,7 +541,7 @@ describe('Integration Tests', () => {
       await pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_CREATED,
@@ -569,7 +567,7 @@ describe('Integration Tests', () => {
 
       await pool.stop();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_SEGREGATED,
         XPoolEvents.RESOURCE_CREATION_ABANDONED,
@@ -611,7 +609,7 @@ describe('Integration Tests', () => {
       await pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -629,7 +627,7 @@ describe('Integration Tests', () => {
       await pool.stop();
       await scheduler.wait(200);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -639,7 +637,7 @@ describe('Integration Tests', () => {
       ]);
     });
 
-    it('should segregate resources that error while being destroyed', async () => {
+    it('should zombie resources that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }]);
       const pool = new XPool({ factory, minPoolSize: 1 });
       const eventLog = new EventLog(pool);
@@ -647,12 +645,11 @@ describe('Integration Tests', () => {
       await pool.start();
       await pool.stop();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 1 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
         XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
-        XPoolEvents.RESOURCE_SEGREGATED,
       ]);
     });
 
@@ -662,7 +659,7 @@ describe('Integration Tests', () => {
 
       await pool.stop();
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
     });
 
     it('should tolerate concurrent attempts to stop a pool', async () => {
@@ -673,7 +670,7 @@ describe('Integration Tests', () => {
       await pool.start();
       await Promise.all([pool.stop(), pool.stop(), pool.stop()]);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -691,8 +688,12 @@ describe('Integration Tests', () => {
         return true;
       });
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 1, segregated: 0, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 1, segregated: 0, size: 1, zombie: 0 });
     });
+
+    it('should not wait for segregated resources');
+
+    it('should not wait for zombied resources');
   });
 
   describe('acquire', () => {
@@ -707,7 +708,7 @@ describe('Integration Tests', () => {
         const resource = await pool.acquire();
         eq(resource, 1);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -725,7 +726,7 @@ describe('Integration Tests', () => {
 
         await scheduler.wait(100);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 1, doomed: 0, segregated: 0, size: 3 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 1, doomed: 0, segregated: 0, size: 3, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_CREATED,
@@ -749,7 +750,7 @@ describe('Integration Tests', () => {
 
         eq(resource, 1);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -767,7 +768,7 @@ describe('Integration Tests', () => {
         const resource2 = await pool.acquire();
         eq(resource2, 2);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 2, doomed: 0, segregated: 0, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 2, doomed: 0, segregated: 0, size: 2, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -788,7 +789,7 @@ describe('Integration Tests', () => {
           await pool.acquire();
         }, 99);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -813,7 +814,7 @@ describe('Integration Tests', () => {
           return true;
         });
 
-        eq(pool.stats(), { queued: 1, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 1, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -832,7 +833,7 @@ describe('Integration Tests', () => {
 
         await scheduler.wait(100);
 
-        eq(pool.stats(), { queued: 1000, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 1000, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         pool.release(resource);
         await done;
       });
@@ -845,7 +846,7 @@ describe('Integration Tests', () => {
         const resource = await pool.acquire();
         eq(resource, 2);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATED,
@@ -862,7 +863,7 @@ describe('Integration Tests', () => {
           await pool.acquire();
         }, 100 + 200 + 400);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -881,7 +882,7 @@ describe('Integration Tests', () => {
           await pool.acquire();
         }, 50 + 75 + 100);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -899,7 +900,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -918,7 +919,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -931,7 +932,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources that timeout, then are created belatedly, but then error when being destroyed', async () => {
+      it('should zombie resources that timeout, then are created belatedly, but then error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, createTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -939,7 +940,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -947,11 +948,10 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_ACQUIRED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
-      it('should permanently segregate resources that timeout, then are created belatedly, but then timeout and error when being destroyed', async () => {
+      it('should zombie resources that timeout, then are created belatedly, but then timeout and error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, createDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, createTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0 });
         const eventLog = new EventLog(pool);
@@ -959,7 +959,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -982,7 +982,7 @@ describe('Integration Tests', () => {
 
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -998,7 +998,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1015,7 +1015,7 @@ describe('Integration Tests', () => {
 
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1031,7 +1031,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1047,7 +1047,7 @@ describe('Integration Tests', () => {
 
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -1062,7 +1062,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -1078,7 +1078,7 @@ describe('Integration Tests', () => {
 
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -1093,7 +1093,7 @@ describe('Integration Tests', () => {
         await pool.start();
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -1108,7 +1108,7 @@ describe('Integration Tests', () => {
 
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
@@ -1128,7 +1128,7 @@ describe('Integration Tests', () => {
           await pool.acquire();
         }, 100 + 200 + 400);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
@@ -1154,7 +1154,7 @@ describe('Integration Tests', () => {
           await pool.acquire();
         }, 50 + 75 + 100);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
@@ -1179,7 +1179,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -1200,7 +1200,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -1215,7 +1215,7 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should permanently segregate resources that timeout, then are validated belatedly, but that error when being destroyed', async () => {
+      it('should zombie resources that timeout, then are validated belatedly, but that error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -1223,7 +1223,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -1233,11 +1233,10 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_ACQUIRED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
-      it('should permanently segregate resources that timeout, then are validated belatedly, but that timeout and error when being destroyed', async () => {
+      it('should zombie resources that timeout, then are validated belatedly, but that timeout and error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
         const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
         const eventLog = new EventLog(pool);
@@ -1245,7 +1244,7 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 2, zombie: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
@@ -1294,7 +1293,7 @@ describe('Integration Tests', () => {
         });
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATION_ABANDONED,
@@ -1314,7 +1313,7 @@ describe('Integration Tests', () => {
         });
         await scheduler.wait(300);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -1336,7 +1335,7 @@ describe('Integration Tests', () => {
           return true;
         });
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       });
 
       it('should check for other queued requests after the acquire times out', async () => {
@@ -1353,7 +1352,7 @@ describe('Integration Tests', () => {
         await scheduler.wait(300);
         await pool.acquire();
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1, zombie: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATION_ABANDONED,
@@ -1377,7 +1376,7 @@ describe('Integration Tests', () => {
 
       await pool.release(resource);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
@@ -1392,7 +1391,7 @@ describe('Integration Tests', () => {
 
       await pool.release(2);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, []);
     });
 
@@ -1405,7 +1404,7 @@ describe('Integration Tests', () => {
 
       await pool.release(resource);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
@@ -1422,9 +1421,9 @@ describe('Integration Tests', () => {
 
     it('should segregate then destroy resources that timeout, then reset belatedly, but timeout while being destroyed');
 
-    it('should permanently segregate resources that timeout, then reset belatedly, but error when being destroyed');
+    it('should zombie resources that timeout, then reset belatedly, but error when being destroyed');
 
-    it('should permanently segregate resources that timeout, then reset belatedly, but timeout, then error when being destroyed');
+    it('should zombie resources that timeout, then reset belatedly, but timeout, then error when being destroyed');
   });
 
   describe('destroy', () => {
@@ -1438,7 +1437,7 @@ describe('Integration Tests', () => {
 
       await pool.destroy(resource);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
@@ -1446,7 +1445,7 @@ describe('Integration Tests', () => {
       ]);
     });
 
-    it('should segregate resources that error while being destroyed', async () => {
+    it('should zombie resources that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyError: 'Oh Noes!' }]);
       const pool = new XPool({ factory });
       const eventLog = new EventLog(pool);
@@ -1455,12 +1454,11 @@ describe('Integration Tests', () => {
 
       await pool.destroy(resource);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 1 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
-        XPoolEvents.RESOURCE_SEGREGATED,
       ]);
     });
 
@@ -1475,7 +1473,7 @@ describe('Integration Tests', () => {
 
       await scheduler.wait(300);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
@@ -1485,7 +1483,7 @@ describe('Integration Tests', () => {
       ]);
     });
 
-    it('should permanently segregate resources created belatedly that error while being destroyed', async () => {
+    it('should zombie resources created belatedly that error while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, destroyDelay: 200, destroyError: 'Oh Noes!' }]);
       const pool = new XPool({ factory, destroyTimeout: 100 });
       const eventLog = new EventLog(pool);
@@ -1496,7 +1494,7 @@ describe('Integration Tests', () => {
 
       await scheduler.wait(300);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 1 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
@@ -1513,7 +1511,7 @@ describe('Integration Tests', () => {
 
       await pool.destroy(2);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
       eq(eventLog.events, []);
     });
 
@@ -1528,7 +1526,7 @@ describe('Integration Tests', () => {
 
       await scheduler.wait(100);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -1552,7 +1550,7 @@ describe('Integration Tests', () => {
 
       await scheduler.wait(500);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 3, acquired: 0, doomed: 0, segregated: 0, size: 3 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 3, acquired: 0, doomed: 0, segregated: 0, size: 3, zombie: 0 });
     });
 
     it('should tolerate errors refilling the pool', async () => {
@@ -1566,7 +1564,7 @@ describe('Integration Tests', () => {
 
       await scheduler.wait(300);
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -1590,7 +1588,7 @@ describe('Integration Tests', () => {
         eq(resource, 1);
       });
 
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1, zombie: 0 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -1650,7 +1648,7 @@ describe('Integration Tests', () => {
 
     it('should provide empty statistics', () => {
       const pool = new XPool();
-      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0, zombie: 0 });
     });
   });
 });

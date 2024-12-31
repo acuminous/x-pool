@@ -28,4 +28,4 @@ Try to come up with a better name for UnvalidatedState
 
 Can resource.destroy move to doomed state, then call destroy?
 
-Remove shutdown code - it appears to call destroy on bays while they are initialising. I am surprised that bays can be destroyed before they are initialised and suspect the unvalidated state should not have a destroy method.
+Currently, reserving a bay moves it to unvalidated state. When culling bays, the idle ones are reserved, then destroyed. This means we need a destroy method on the unvalidated state, which while correct, is a bit confusing. I would prefer if the reserve logic was smarter so it conditionally transitions to Ready when validation is not required.
