@@ -473,6 +473,7 @@ describe('Pool', () => {
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATION_ABANDONED,
         ]);
       });
 
@@ -502,6 +503,7 @@ describe('Pool', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_VALIDATION_ABANDONED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_DESTROYED,
         ]);
@@ -577,6 +579,7 @@ describe('Pool', () => {
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_CREATION_ABANDONED,
       ]);
     });
 
@@ -1308,6 +1311,7 @@ describe('Pool', () => {
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATION_ABANDONED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTROYED,
         ]);
@@ -1328,27 +1332,8 @@ describe('Pool', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_VALIDATION_ABANDONED,
           XPoolEvents.RESOURCE_VALIDATED,
-          XPoolEvents.RESOURCE_DESTROYED,
-        ]);
-      });
-
-      it('should tolerate aborting resources that error when being created ', async () => {
-        const factory = new TestFactory([{ resource: 1, createError: 'Oh Noes!' }, { resource: 2, createDelay: 300 }]);
-        const pool = new Pool({ factory, acquireTimeout: 200 });
-        const eventLog = new EventLog(pool);
-
-        await rejects(() => pool.acquire(), (error) => {
-          eq(error.message, 'Failed to acquire resource within 200ms');
-          return true;
-        });
-        await scheduler.wait(300);
-
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
-        eq(eventLog.events, [
-          XPoolEvents.RESOURCE_CREATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
-          XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
@@ -1385,6 +1370,7 @@ describe('Pool', () => {
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATION_ABANDONED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,

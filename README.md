@@ -13,4 +13,3 @@
 - Kill pool when an event listener throws an error instead of emitting an error
 - Rename Requests AsyncRequest (as they have a latch, and yield)
 - Make Validate values a Symbol (possibly using yup to convert from strings)
-- Consider exporting XPoolEvents which include things like RESOURCE_CREATION_ABORTED
