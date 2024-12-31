@@ -5,7 +5,7 @@ const seedrandom = require('seedrandom');
 const ReliableFactory = require('./lib/ReliableFactory');
 const UnreliableFactory = require('./lib/UnreliableFactory');
 const BrokenFactory = require('./lib/BrokenFactory');
-const { Pool } = require('..');
+const { XPool } = require('..');
 
 const seed = Math.floor(Math.random() * 1000);
 
@@ -30,7 +30,7 @@ describe(`stress - ${seed}`, () => {
 });
 
 async function runTest(factory) {
-  const pool = new Pool({ maxPoolSize: 1, factory });
+  const pool = new XPool({ maxPoolSize: 1, factory });
   const workers = new Array(1).fill().map((_, index) => new Worker(index + 1, pool));
   const work = workers.map((worker) => worker.run(1));
   await Promise.all(work);
