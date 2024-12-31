@@ -313,7 +313,6 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -334,15 +333,12 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -363,15 +359,12 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1119,7 +1112,6 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1140,15 +1132,12 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1169,15 +1158,12 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
-          XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
@@ -1411,7 +1397,7 @@ describe('Integration Tests', () => {
     });
 
     it('should reset resources before returning them to the pool when configured', async () => {
-     const factory = new TestFactory([{ resource: 1 }]);
+      const factory = new TestFactory([{ resource: 1 }]);
       const pool = new XPool({ factory, reset: 'ALWAYS' });
       const eventLog = new EventLog(pool);
 

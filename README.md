@@ -25,3 +25,7 @@ use debug.extend() with bays and requests
 
 Rename Pending to indicate it is about creating a resource
 Try to come up with a better name for UnvalidatedState
+
+Can resource.destroy move to doomed state, then call destroy?
+
+Remove shutdown code - it appears to call destroy on bays while they are initialising. I am surprised that bays can be destroyed before they are initialised and suspect the unvalidated state should not have a destroy method.
