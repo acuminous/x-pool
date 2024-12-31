@@ -23,7 +23,6 @@ Check if bay metadata is used / what metadata might be useful. Currently some st
 
 use debug.extend() with bays and requests
 
-Rename Pending to indicate it is about creating a resource
 Try to come up with a better name for UnvalidatedState
 
 Can resource.destroy move to doomed state, then call destroy?
