@@ -1,9 +1,9 @@
 const Pool = require('./lib/Pool');
-const { XPoolError } = require('./lib/errors/XPoolError');
-const Events = require('./lib/bay/Events');
+const XPoolError = require('./lib/errors/XPoolError');
+const XPoolEvents = require('./lib/XPoolEvents');
 
 module.exports = {
   Pool,
-  Events,
+  XPoolEvents,
   XPoolError,
 };

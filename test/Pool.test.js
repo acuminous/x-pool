@@ -1,7 +1,7 @@
 const { describe, it, afterEach } = require('zunit');
 const { deepStrictEqual: eq, rejects, fail } = require('node:assert');
 const { scheduler } = require('node:timers/promises');
-const { Pool, Events } = require('..');
+const { Pool, XPoolEvents } = require('..');
 const PromiseUtils = require('../lib/utils/PromiseUtils');
 const TestFactory = require('./lib/TestFactory');
 const EventLog = require('./lib/EventLog');
@@ -18,7 +18,7 @@ describe('Pool', () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new Pool({ factory, minPoolSize: 1 });
 
-      pool.on(Events.RESOURCE_CREATED, () => {
+      pool.on(XPoolEvents.RESOURCE_CREATED, () => {
         throw new Error('Oh Noes!');
       });
 
@@ -115,9 +115,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -132,11 +132,11 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -151,11 +151,11 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -169,14 +169,14 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 0, doomed: 0, segregated: 0, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -190,14 +190,14 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -211,13 +211,13 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
-          Events.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
@@ -231,14 +231,14 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
       });
     });
@@ -253,9 +253,9 @@ describe('Pool', () => {
         await pool.start();
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -266,9 +266,9 @@ describe('Pool', () => {
 
         await pool.start();
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
@@ -283,8 +283,8 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -297,8 +297,8 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -311,13 +311,13 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -332,21 +332,21 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -361,21 +361,21 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
 
@@ -389,16 +389,16 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -412,15 +412,15 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
-          Events.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
@@ -434,16 +434,16 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
       });
     });
@@ -472,7 +472,7 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
@@ -500,10 +500,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
     });
@@ -550,15 +550,15 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_DESTROYED,
-        Events.RESOURCE_DESTROYED,
-        Events.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_DESTROYED,
       ]);
     });
 
@@ -576,7 +576,7 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_SEGREGATED,
       ]);
     });
 
@@ -587,13 +587,13 @@ describe('Pool', () => {
 
       await pool.start();
 
-      const events = [Events.RESOURCE_CREATED, Events.RESOURCE_RELEASED];
+      const events = [XPoolEvents.RESOURCE_CREATED, XPoolEvents.RESOURCE_RELEASED];
       PromiseUtils.times(11, async () => {
-        events.push(Events.RESOURCE_ACQUIRED, Events.RESOURCE_RELEASED);
+        events.push(XPoolEvents.RESOURCE_ACQUIRED, XPoolEvents.RESOURCE_RELEASED);
         const resource = await pool.acquire();
         setTimeout(() => pool.release(resource), 100);
       }).then(() => {
-        events.push(Events.RESOURCE_DESTROYED);
+        events.push(XPoolEvents.RESOURCE_DESTROYED);
       });
 
       await scheduler.wait(50);
@@ -617,10 +617,10 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_DESTRUCTION_TIMEOUT,
-        Events.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
       ]);
     });
 
@@ -635,11 +635,11 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_DESTRUCTION_TIMEOUT,
-        Events.RESOURCE_SEGREGATED,
-        Events.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_DESTROYED,
       ]);
     });
 
@@ -653,10 +653,10 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_DESTRUCTION_ERROR,
-        Events.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+        XPoolEvents.RESOURCE_SEGREGATED,
       ]);
     });
 
@@ -679,9 +679,9 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_DESTROYED,
       ]);
     });
 
@@ -713,9 +713,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -731,13 +731,13 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 2, acquired: 1, doomed: 0, segregated: 0, size: 3 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
         ]);
       });
     });
@@ -755,8 +755,8 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -773,10 +773,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 2, doomed: 0, segregated: 0, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -794,10 +794,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -819,8 +819,8 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 1, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -851,9 +851,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -868,11 +868,11 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -887,11 +887,11 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -905,12 +905,12 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -924,14 +924,14 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -945,13 +945,13 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
-          Events.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
@@ -965,14 +965,14 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
       });
     });
@@ -988,9 +988,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1004,11 +1004,11 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1021,9 +1021,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1037,10 +1037,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1053,8 +1053,8 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1068,10 +1068,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1084,8 +1084,8 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1099,9 +1099,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_RELEASED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1114,13 +1114,13 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1135,21 +1135,21 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1164,21 +1164,21 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1192,14 +1192,14 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
 
@@ -1213,16 +1213,16 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -1236,15 +1236,15 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
-          Events.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
         ]);
       });
 
@@ -1258,16 +1258,16 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 1, size: 2 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_ACQUIRED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTRUCTION_TIMEOUT,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
       });
     });
@@ -1307,9 +1307,9 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
         eq(eventLog.events, [
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -1326,10 +1326,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_VALIDATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_VALIDATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -1346,10 +1346,10 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
         eq(eventLog.events, [
-          Events.RESOURCE_CREATION_ERROR,
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATION_ERROR,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTROYED,
         ]);
       });
 
@@ -1384,11 +1384,11 @@ describe('Pool', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, doomed: 0, segregated: 0, size: 1 });
         eq(eventLog.events, [
-          Events.RESOURCE_SEGREGATED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_DESTROYED,
-          Events.RESOURCE_CREATED,
-          Events.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTROYED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
     });
@@ -1407,9 +1407,9 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
 
@@ -1438,9 +1438,9 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_DESTROYED,
       ]);
     });
 
@@ -1455,10 +1455,10 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_DESTRUCTION_ERROR,
-        Events.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+        XPoolEvents.RESOURCE_SEGREGATED,
       ]);
     });
 
@@ -1475,11 +1475,11 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 0, size: 0 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_DESTRUCTION_TIMEOUT,
-        Events.RESOURCE_SEGREGATED,
-        Events.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_DESTROYED,
       ]);
     });
 
@@ -1496,11 +1496,11 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, doomed: 0, segregated: 1, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_DESTRUCTION_TIMEOUT,
-        Events.RESOURCE_SEGREGATED,
-        Events.RESOURCE_DESTRUCTION_ERROR,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
       ]);
     });
 
@@ -1528,12 +1528,12 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_DESTROYED,
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
 
@@ -1566,13 +1566,13 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_DESTROYED,
-        Events.RESOURCE_CREATION_ERROR,
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_DESTROYED,
+        XPoolEvents.RESOURCE_CREATION_ERROR,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
   });
@@ -1590,10 +1590,10 @@ describe('Pool', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, doomed: 0, segregated: 0, size: 1 });
       eq(eventLog.events, [
-        Events.RESOURCE_CREATED,
-        Events.RESOURCE_RELEASED,
-        Events.RESOURCE_ACQUIRED,
-        Events.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
 

@@ -1,9 +1,9 @@
-const { Events } = require('../..');
+const { XPoolEvents } = require('../..');
 
 class EventLog {
   #records = [];
 
-  constructor(emitter, candidates = Object.values(Events)) {
+  constructor(emitter, candidates = Object.values(XPoolEvents)) {
     if (this.#hasDuplicates(candidates)) throw new Error(`Candidate events contains duplicates: [${this.#findDuplicates(candidates).join(', ')}]`);
     candidates.forEach((event) => {
       emitter.on(event, (...args) => {
