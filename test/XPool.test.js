@@ -701,6 +701,7 @@ describe('Integration Tests', () => {
   describe('acquire', () => {
 
     describe('idle resources', () => {
+
       it('should prefer idle resources', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
         const pool = new XPool({ factory, minPoolSize: 1 });
@@ -973,6 +974,35 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
       });
+
+      it('should create a resource when the pool is at capacity once space becomes through resource is destruction', async () => {
+        const factory = new TestFactory([{ resource: 1, createDelay: 200 }, { resource: 2 }]);
+        const pool = new XPool({ factory, maxPoolSize: 1, createTimeout: 100, backoffMaxValue: 0 });
+        const eventLog = new EventLog(pool);
+
+        await pool.acquire();
+        await scheduler.wait(500);
+
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 2 });
+        eq(eventLog.events, [
+          XPoolEvents.RESOURCE_CREATION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_CREATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+          XPoolEvents.RESOURCE_SEGREGATED,
+          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+        ]);
+      }, { skip: true });
+      /*
+        When create resource errors
+        The resource is destroyed without an await
+        And the error is thrown from the command
+        Meaning that that acquire will be requeued before the resource is destroyed
+        I am not sure if the resource will ever be dequeued if the destroy takes a long time
+        but the queue is full
+      */
     });
 
     describe('resource validation', () => {
@@ -1413,19 +1443,135 @@ describe('Integration Tests', () => {
         XPoolEvents.RESOURCE_RESET,
         XPoolEvents.RESOURCE_RELEASED,
       ]);
-    }, { skip: true });
+    });
 
-    it('should segregate then destroy resources that error while being reset');
+    it('should destroy resources that error while being reset', async () => {
+      const factory = new TestFactory([{ resource: 1, resetError: 'Oh Noes' }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS' });
+      const eventLog = new EventLog(pool);
 
-    it('should segregate then destroy resources that timeout, then error while being reset');
+      const resource = await pool.acquire();
 
-    it('should segregate then destroy resources that timeout, then reset belatedly');
+      await pool.release(resource);
 
-    it('should segregate then destroy resources that timeout, then reset belatedly, but timeout while being destroyed');
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET_ERROR,
+        XPoolEvents.RESOURCE_DESTROYED,
+      ]);
+    });
 
-    it('should zombie resources that timeout, then reset belatedly, but error when being destroyed');
+    it('should segregate then destroy resources that timeout, then error while being reset', async () => {
+      const factory = new TestFactory([{ resource: 1, resetDelay: 200, resetError: 'Oh Noes' }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100 });
+      const eventLog = new EventLog(pool);
 
-    it('should zombie resources that timeout, then reset belatedly, but timeout, then error when being destroyed');
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_RESET_ERROR,
+        XPoolEvents.RESOURCE_DESTROYED,
+      ]);
+      await scheduler.wait(1000);
+    });
+
+    it('should segregate then destroy resources that timeout, then reset belatedly', async () => {
+      const factory = new TestFactory([{ resource: 1, resetDelay: 200 }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100 });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_RESET,
+        XPoolEvents.RESOURCE_DESTROYED,
+      ]);
+    });
+
+    it('should segregate then destroy resources that timeout, then reset belatedly, but timeout while being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, resetDelay: 200, destroyDelay: 200 }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_RESET,
+        XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_DESTROYED,
+      ]);
+    });
+
+    it('should zombie resources that timeout, then reset belatedly, but error when being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, resetDelay: 200, destroyError: 'Oh Noes!' }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100 });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+      await scheduler.wait(300);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 1 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_RESET,
+        XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+      ]);
+    });
+
+    it('should zombie resources that timeout, then reset belatedly, but timeout, then error when being destroyed', async () => {
+      const factory = new TestFactory([{ resource: 1, resetDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }]);
+      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100, destroyTimeout: 100 });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+      await scheduler.wait(500);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 1 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RESET_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_RESET,
+        XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
+        XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+      ]);
+    });
   });
 
   describe('destroy', () => {
@@ -1577,6 +1723,8 @@ describe('Integration Tests', () => {
         XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
+
+    it('should tolerate errors while destroying resources when the call is not awaited');
   });
 
   describe('with', () => {

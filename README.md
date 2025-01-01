@@ -1,6 +1,5 @@
 ### TODO
 - initialPoolSize (can be less than min for quick start, but must be less than or equal to max). Used to size the pool on startup
-- Resource reset
 - autoStart
 - Reap Idle resources
   - maxIdleTime
@@ -11,7 +10,7 @@
 - Check factory destroy is actually called from tests
 - Kill pool when an event listener throws an error instead of emitting an error
 - Rename Requests AsyncRequest (as they have a latch, and yield)
-- Make Validate configuration options a Symbol (possibly using yup to convert from strings)
+- Make Validate and Reset configuration options a Symbol but still allow config to be specified as strings
 
 
 Add config for
@@ -26,3 +25,9 @@ use debug.extend() with bays and requests
 Can resource.destroy move to doomed state, then call destroy?
 
 Use separate store for resources that have timedout, and resources that were abandoned so that shutdown will wait for the abandoned resources to complete
+
+Rename doomed to destroying
+
+Consider adding a RESOURCE_ZOMBIED event (or words to that effect)
+
+Do not catch all errors - instead check to ensure that it is and error that XPool might expect, e.g. a Factory Error or a Timeout Error
