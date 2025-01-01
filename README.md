@@ -24,3 +24,5 @@ Check if bay metadata is used / what metadata might be useful. Currently some st
 use debug.extend() with bays and requests
 
 Can resource.destroy move to doomed state, then call destroy?
+
+Use separate store for resources that have timedout, and resources that were abandoned so that shutdown will wait for the abandoned resources to complete
