@@ -1723,8 +1723,6 @@ describe('Integration Tests', () => {
         XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
-
-    it('should tolerate errors while destroying resources when the call is not awaited');
   });
 
   describe('with', () => {
