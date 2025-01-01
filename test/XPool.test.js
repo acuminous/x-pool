@@ -244,9 +244,9 @@ describe('Integration Tests', () => {
 
     describe('resource validation', () => {
 
-      it('should validate created resources when configuration specifies ALWAYS', async () => {
+      it('should validate new resources when configuration specifies ALWAYS_VALIDATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -258,9 +258,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should validate created resources when configuration specifies CREATE', async () => {
+      it('should validate new resources when configuration specifies VALIDATE_NEW', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'CREATE' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'VALIDATE_NEW' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -273,9 +273,9 @@ describe('Integration Tests', () => {
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
       });
 
-      it('should not validate created resources when configuration specifies IDLE', async () => {
+      it('should not validate new resources when configuration specifies VALIDATE_IDLE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'IDLE' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'VALIDATE_IDLE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -287,9 +287,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should not validate created resource when configuration specifies NEVER', async () => {
+      it('should not validate created resource when configuration specifies NEVER_VALIDATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'NEVER' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'NEVER_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -303,7 +303,7 @@ describe('Integration Tests', () => {
 
       it('should handle errors validating resources', async () => {
         const factory = new TestFactory([{ resource: 1, validateError: 'Oh Noes!' }, { resource: 2 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -321,7 +321,7 @@ describe('Integration Tests', () => {
 
       it('should backoff exponentially after an error validating resources', async () => {
         const factory = new TestFactory([{ validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { resource: 4 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await tmin(async () => {
@@ -347,7 +347,7 @@ describe('Integration Tests', () => {
 
       it('should honour backoff configuration', async () => {
         const factory = new TestFactory([{ validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { resource: 4 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, backoffInitialValue: 50, backoffFactor: 1.5, backoffMaxValue: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, backoffInitialValue: 50, backoffFactor: 1.5, backoffMaxValue: 100, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await tmin(async () => {
@@ -373,7 +373,7 @@ describe('Integration Tests', () => {
 
       it('should segregate then destroy resources validated belatedly that timeout while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -396,7 +396,7 @@ describe('Integration Tests', () => {
 
       it('should zombie resources validated belatedly that error while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -417,7 +417,7 @@ describe('Integration Tests', () => {
 
       it('should zombie resources validated belatedly that timeout then error while being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -470,7 +470,7 @@ describe('Integration Tests', () => {
 
       it('should reject if the start times out during resource validation', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, startTimeout: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, startTimeout: 100, validate: 'ALWAYS_VALIDATE' });
 
         await rejects(() => pool.start(), (error) => {
           eq(error.message, 'Failed to start pool within 100ms');
@@ -480,7 +480,7 @@ describe('Integration Tests', () => {
 
       it('should segregate then destroy resources validated belatedly if start times out during resource validation', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, startTimeout: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, startTimeout: 100, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await rejects(() => pool.start(), (error) => {
@@ -1007,9 +1007,9 @@ describe('Integration Tests', () => {
 
     describe('resource validation', () => {
 
-      it('should validate created resources when configuration specifies ALWAYS', async () => {
+      it('should validate created resources when configuration specifies ALWAYS_VALIDATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1022,9 +1022,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should validate idle resources when configuration specifies ALWAYS', async () => {
+      it('should validate idle resources when configuration specifies ALWAYS_VALIDATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -1042,7 +1042,7 @@ describe('Integration Tests', () => {
 
       it('should validate created resources when configuration specifies CREATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, validate: 'CREATE' });
+        const pool = new XPool({ factory, validate: 'VALIDATE_NEW' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1057,7 +1057,7 @@ describe('Integration Tests', () => {
 
       it('should not validate idle resources when configuration specifies CREATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'CREATE' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'VALIDATE_NEW' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -1072,9 +1072,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should not validate created resources when configuration specifies IDLE', async () => {
+      it('should not validate created resources when configuration specifies VALIDATE_IDLE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, validate: 'IDLE' });
+        const pool = new XPool({ factory, validate: 'VALIDATE_IDLE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1086,9 +1086,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should validate idle resources when configuration specifies IDLE', async () => {
+      it('should validate idle resources when configuration specifies VALIDATE_IDLE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'IDLE' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'VALIDATE_IDLE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -1103,9 +1103,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should not validate created resources when configuration specifies NEVER', async () => {
+      it('should not validate created resources when configuration specifies NEVER_VALIDATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, validate: 'NEVER' });
+        const pool = new XPool({ factory, validate: 'NEVER_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1117,9 +1117,9 @@ describe('Integration Tests', () => {
         ]);
       });
 
-      it('should not validate idle resources when configuration specifies NEVER', async () => {
+      it('should not validate idle resources when configuration specifies NEVER_VALIDATE', async () => {
         const factory = new TestFactory([{ resource: 1 }]);
-        const pool = new XPool({ factory, minPoolSize: 1, validate: 'NEVER' });
+        const pool = new XPool({ factory, minPoolSize: 1, validate: 'NEVER_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.start();
@@ -1135,7 +1135,7 @@ describe('Integration Tests', () => {
 
       it('should retry on resource validation errors', async () => {
         const factory = new TestFactory([{ resource: 1, validateError: 'Oh Noes!' }, { resource: 2 }]);
-        const pool = new XPool({ factory, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1153,7 +1153,7 @@ describe('Integration Tests', () => {
 
       it('should backoff exponentially after an error validating resources', async () => {
         const factory = new TestFactory([{ validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { resource: 4 }]);
-        const pool = new XPool({ factory, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await tmin(async () => {
@@ -1179,7 +1179,7 @@ describe('Integration Tests', () => {
 
       it('should honour backoff configuration', async () => {
         const factory = new TestFactory([{ validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { validateError: 'Oh Noes!' }, { resource: 4 }]);
-        const pool = new XPool({ factory, backoffInitialValue: 50, backoffFactor: 1.5, backoffMaxValue: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, backoffInitialValue: 50, backoffFactor: 1.5, backoffMaxValue: 100, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await tmin(async () => {
@@ -1205,7 +1205,7 @@ describe('Integration Tests', () => {
 
       it('should segregate then destroy resources that timeout, then are validated belatedly', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200 }, { resource: 2 }]);
-        const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 100, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1226,7 +1226,7 @@ describe('Integration Tests', () => {
 
       it('should segregate then destroy resources that timeout, then are validated belatedly, but thne timeout when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200 }, { resource: 2 }]);
-        const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1249,7 +1249,7 @@ describe('Integration Tests', () => {
 
       it('should zombie resources that timeout, then are validated belatedly, but that error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
-        const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validateTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1270,7 +1270,7 @@ describe('Integration Tests', () => {
 
       it('should zombie resources that timeout, then are validated belatedly, but that timeout and error when being destroyed', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }, { resource: 2 }]);
-        const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, validateTimeout: 100, destroyTimeout: 100, backoffMaxValue: 0, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await pool.acquire();
@@ -1306,7 +1306,7 @@ describe('Integration Tests', () => {
 
       it('should reject if the acquire times out during resource validation', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200 }]);
-        const pool = new XPool({ factory, acquireTimeout: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, acquireTimeout: 100, validate: 'ALWAYS_VALIDATE' });
 
         await rejects(() => pool.acquire(), (error) => {
           eq(error.message, 'Failed to acquire resource within 100ms');
@@ -1336,7 +1336,7 @@ describe('Integration Tests', () => {
 
       it('should segregate then destroy resources validated belatedly after the acquire times out', async () => {
         const factory = new TestFactory([{ resource: 1, validateDelay: 200 }]);
-        const pool = new XPool({ factory, acquireTimeout: 100, validate: 'ALWAYS' });
+        const pool = new XPool({ factory, acquireTimeout: 100, validate: 'ALWAYS_VALIDATE' });
         const eventLog = new EventLog(pool);
 
         await rejects(() => pool.acquire(), (error) => {
@@ -1427,9 +1427,26 @@ describe('Integration Tests', () => {
       eq(eventLog.events, []);
     });
 
+    it('should not reset resources before returning them to the pool when configured', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new XPool({ factory, reset: 'NEVER_RESET' });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+
+      await pool.release(resource);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
+      eq(eventLog.events, [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+        XPoolEvents.RESOURCE_RELEASED,
+      ]);
+    });
+
     it('should reset resources before returning them to the pool when configured', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS' });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET' });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();
@@ -1447,7 +1464,7 @@ describe('Integration Tests', () => {
 
     it('should destroy resources that error while being reset', async () => {
       const factory = new TestFactory([{ resource: 1, resetError: 'Oh Noes' }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS' });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET' });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();
@@ -1465,7 +1482,7 @@ describe('Integration Tests', () => {
 
     it('should segregate then destroy resources that timeout, then error while being reset', async () => {
       const factory = new TestFactory([{ resource: 1, resetDelay: 200, resetError: 'Oh Noes' }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100 });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET', resetTimeout: 100 });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();
@@ -1487,7 +1504,7 @@ describe('Integration Tests', () => {
 
     it('should segregate then destroy resources that timeout, then reset belatedly', async () => {
       const factory = new TestFactory([{ resource: 1, resetDelay: 200 }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100 });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET', resetTimeout: 100 });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();
@@ -1508,7 +1525,7 @@ describe('Integration Tests', () => {
 
     it('should segregate then destroy resources that timeout, then reset belatedly, but timeout while being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, resetDelay: 200, destroyDelay: 200 }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100, destroyTimeout: 100 });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET', resetTimeout: 100, destroyTimeout: 100 });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();
@@ -1531,7 +1548,7 @@ describe('Integration Tests', () => {
 
     it('should zombie resources that timeout, then reset belatedly, but error when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, resetDelay: 200, destroyError: 'Oh Noes!' }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100 });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET', resetTimeout: 100 });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();
@@ -1552,7 +1569,7 @@ describe('Integration Tests', () => {
 
     it('should zombie resources that timeout, then reset belatedly, but timeout, then error when being destroyed', async () => {
       const factory = new TestFactory([{ resource: 1, resetDelay: 200, destroyDelay: 200, destroyError: 'Oh Noes!' }]);
-      const pool = new XPool({ factory, reset: 'ALWAYS', resetTimeout: 100, destroyTimeout: 100 });
+      const pool = new XPool({ factory, reset: 'ALWAYS_RESET', resetTimeout: 100, destroyTimeout: 100 });
       const eventLog = new EventLog(pool);
 
       const resource = await pool.acquire();

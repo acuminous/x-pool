@@ -10,8 +10,6 @@
 - Check factory destroy is actually called from tests
 - Kill pool when an event listener throws an error instead of emitting an error
 - Rename Requests AsyncRequest (as they have a latch, and yield)
-- Make Validate and Reset configuration options a Symbol but still allow config to be specified as strings
-
 
 Add config for
   validationInterval: Infinity,
