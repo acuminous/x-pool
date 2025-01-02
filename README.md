@@ -18,8 +18,6 @@ Add config for
 
 Check if bay metadata is used / what metadata might be useful. Currently some state transitions are routed through the bay, where they update metadata, others are made directly from the state, and so bypass the bay metadata.
 
-use debug.extend() with bays and requests
-
 Can resource.destroy move to doomed state, then call destroy?
 
 Use separate store for resources that have timedout, and resources that were abandoned so that shutdown will wait for the abandoned resources to complete
@@ -31,3 +29,5 @@ Consider adding a RESOURCE_ZOMBIED event (or words to that effect)
 Do not catch all errors - instead check to ensure that it is and error that XPool might expect, e.g. a Factory Error or a Timeout Error
 
 Close the pool when all resources have been zombied
+
+Rename unqueued request to new request
