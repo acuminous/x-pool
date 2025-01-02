@@ -22,7 +22,7 @@ Can resource.destroy move to doomed state, then call destroy?
 
 Use separate store for resources that have timedout, and resources that were abandoned so that shutdown will wait for the abandoned resources to complete
 
-Rename doomed to destroying
+Consider renaming doomed to destroying (maybe just in the stats)
 
 Consider adding a RESOURCE_ZOMBIED event (or words to that effect)
 
