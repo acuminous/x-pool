@@ -29,3 +29,5 @@ Rename doomed to destroying
 Consider adding a RESOURCE_ZOMBIED event (or words to that effect)
 
 Do not catch all errors - instead check to ensure that it is and error that XPool might expect, e.g. a Factory Error or a Timeout Error
+
+Close the pool when all resources have been zombied
