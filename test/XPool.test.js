@@ -1816,4 +1816,4 @@ describe('Integration Tests', () => {
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
     });
   });
-}, { exclusive: true });
+});
