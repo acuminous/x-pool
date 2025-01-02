@@ -983,26 +983,16 @@ describe('Integration Tests', () => {
         await pool.acquire();
         await scheduler.wait(500);
 
-        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 2 });
+        eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
-          XPoolEvents.RESOURCE_ACQUIRED,
+          XPoolEvents.RESOURCE_DESTROYED,
           XPoolEvents.RESOURCE_CREATED,
-          XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
-          XPoolEvents.RESOURCE_SEGREGATED,
-          XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+          XPoolEvents.RESOURCE_ACQUIRED,
         ]);
-      }, { skip: true });
-      /*
-        When create resource errors
-        The resource is destroyed without an await
-        And the error is thrown from the command
-        Meaning that that acquire will be requeued before the resource is destroyed
-        I am not sure if the resource will ever be dequeued if the destroy takes a long time
-        but the queue is full
-      */
+      });
     });
 
     describe('resource validation', () => {
