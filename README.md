@@ -30,3 +30,4 @@ Do not catch all errors - instead check to ensure that it is and error that XPoo
 
 Close the pool when all resources have been zombied
 
+Add RESOURCE_QUEUED event and check the queue
