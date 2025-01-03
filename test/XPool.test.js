@@ -65,7 +65,9 @@ describe('Integration Tests', () => {
       await pool.start();
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
-      eq(eventLog.events, []);
+      eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
+      ]);
     });
 
     describe('resource creation', () => {
@@ -118,6 +120,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -137,6 +140,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -156,6 +160,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -175,6 +180,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTROYED,
         ]);
@@ -195,6 +201,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_DESTROYED,
@@ -215,6 +222,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
@@ -234,6 +242,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -255,6 +264,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -268,6 +278,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
@@ -284,6 +295,7 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -298,6 +310,7 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -316,6 +329,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -342,6 +356,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -368,6 +383,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
         ]);
       });
 
@@ -387,6 +403,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -410,6 +427,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
         ]);
@@ -431,6 +449,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -549,9 +568,11 @@ describe('Integration Tests', () => {
         XPoolEvents.RESOURCE_RELEASED,
         XPoolEvents.RESOURCE_RELEASED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_DESTROYED,
         XPoolEvents.RESOURCE_DESTROYED,
         XPoolEvents.RESOURCE_DESTROYED,
+        XPoolEvents.POOL_STOPPED,
       ]);
     });
 
@@ -571,6 +592,7 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_SEGREGATED,
         XPoolEvents.RESOURCE_CREATION_ABANDONED,
+        XPoolEvents.POOL_STOPPED,
       ]);
     });
 
@@ -581,13 +603,18 @@ describe('Integration Tests', () => {
 
       await pool.start();
 
-      const events = [XPoolEvents.RESOURCE_CREATED, XPoolEvents.RESOURCE_RELEASED];
+      const events = [
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
+      ];
       PromiseUtils.times(11, async () => {
         events.push(XPoolEvents.RESOURCE_ACQUIRED, XPoolEvents.RESOURCE_RELEASED);
         const resource = await pool.acquire();
         setTimeout(() => pool.release(resource), 100);
       }).then(() => {
         events.push(XPoolEvents.RESOURCE_DESTROYED);
+        events.push(XPoolEvents.POOL_STOPPED);
       });
 
       await scheduler.wait(50);
@@ -615,8 +642,10 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
         XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.POOL_STOPPED,
       ]);
     });
 
@@ -633,8 +662,10 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
         XPoolEvents.RESOURCE_SEGREGATED,
+        XPoolEvents.POOL_STOPPED,
         XPoolEvents.RESOURCE_DESTROYED,
       ]);
     });
@@ -651,7 +682,9 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
+        XPoolEvents.POOL_STOPPED,
       ]);
     });
 
@@ -676,7 +709,9 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_DESTROYED,
+        XPoolEvents.POOL_STOPPED,
       ]);
     });
 
@@ -700,6 +735,22 @@ describe('Integration Tests', () => {
 
   describe('acquire', () => {
 
+    it('should start the pool if not already started', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new XPool({ factory });
+      const eventLog = new EventLog(pool);
+
+      const resource = await pool.acquire();
+      eq(resource, 1);
+
+      eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
+      eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
+        XPoolEvents.RESOURCE_CREATED,
+        XPoolEvents.RESOURCE_ACQUIRED,
+      ]);
+    });
+
     describe('idle resources', () => {
 
       it('should prefer idle resources', async () => {
@@ -715,6 +766,7 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
@@ -735,6 +787,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_ACQUIRED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -755,6 +808,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
@@ -773,6 +827,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 2, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 2 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
           XPoolEvents.RESOURCE_CREATED,
@@ -794,6 +849,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
           XPoolEvents.RESOURCE_RELEASED,
@@ -819,6 +875,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 1, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
@@ -851,6 +908,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -859,7 +917,7 @@ describe('Integration Tests', () => {
 
       it('should backoff exponentially after an error creating resources', async () => {
         const factory = new TestFactory([{ createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, { createError: 'Oh Noes!' }, { resource: 4 }]);
-        const pool = new XPool({ factory, minPoolSize: 0 });
+        const pool = new XPool({ factory });
         const eventLog = new EventLog(pool);
 
         await tmin(async () => {
@@ -868,6 +926,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -887,6 +946,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
           XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -905,6 +965,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
@@ -924,6 +985,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
@@ -945,6 +1007,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 2 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
@@ -964,6 +1027,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 2 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
@@ -985,6 +1049,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATED,
@@ -1006,6 +1071,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -1025,6 +1091,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
@@ -1039,6 +1106,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_ACQUIRED,
@@ -1058,6 +1126,7 @@ describe('Integration Tests', () => {
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
@@ -1071,6 +1140,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
@@ -1088,6 +1158,7 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_VALIDATED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
@@ -1102,6 +1173,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
@@ -1119,6 +1191,7 @@ describe('Integration Tests', () => {
         eq(eventLog.events, [
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_RELEASED,
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_ACQUIRED,
         ]);
       });
@@ -1132,6 +1205,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
           XPoolEvents.RESOURCE_DESTROYED,
@@ -1152,6 +1226,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
           XPoolEvents.RESOURCE_DESTROYED,
@@ -1178,6 +1253,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_ERROR,
           XPoolEvents.RESOURCE_DESTROYED,
@@ -1203,6 +1279,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -1224,6 +1301,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -1247,6 +1325,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 2 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -1268,6 +1347,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 2 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_VALIDATION_TIMEOUT,
           XPoolEvents.RESOURCE_SEGREGATED,
@@ -1317,6 +1397,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATION_ABANDONED,
           XPoolEvents.RESOURCE_CREATED,
@@ -1337,6 +1418,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_CREATED,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_VALIDATION_ABANDONED,
@@ -1376,6 +1458,7 @@ describe('Integration Tests', () => {
 
         eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 1, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
         eq(eventLog.events, [
+          XPoolEvents.POOL_STARTED,
           XPoolEvents.RESOURCE_SEGREGATED,
           XPoolEvents.RESOURCE_CREATION_ABANDONED,
           XPoolEvents.RESOURCE_CREATED,
@@ -1400,21 +1483,35 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RELEASED,
       ]);
     });
 
-    it('should tolerate attempts to release an unmanaged resource', async () => {
+    it('should reject attempts to release an unmanaged resource when the pool has not been started', async () => {
+      const factory = new TestFactory();
+      const pool = new XPool({ factory });
+
+      await rejects(() => pool.release(1), (error) => {
+        eq(error.message, 'The pool has not been started');
+        return true;
+      });
+    });
+
+    it('should tolerate attempts to release an unmanaged resource when the pool has been started', async () => {
       const factory = new TestFactory();
       const pool = new XPool({ factory });
       const eventLog = new EventLog(pool);
 
-      await pool.release(2);
+      await pool.start();
+      await pool.release(1);
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
-      eq(eventLog.events, []);
+      eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
+      ]);
     });
 
     it('should not reset resources before returning them to the pool when configured', async () => {
@@ -1428,6 +1525,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RELEASED,
@@ -1445,6 +1543,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET,
@@ -1463,6 +1562,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET_ERROR,
@@ -1482,6 +1582,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET_TIMEOUT,
@@ -1504,6 +1605,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET_TIMEOUT,
@@ -1525,6 +1627,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET_TIMEOUT,
@@ -1548,6 +1651,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET_TIMEOUT,
@@ -1569,6 +1673,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RESET_TIMEOUT,
@@ -1594,6 +1699,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTROYED,
@@ -1611,6 +1717,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTRUCTION_ERROR,
@@ -1630,6 +1737,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
@@ -1651,6 +1759,7 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 1, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTRUCTION_TIMEOUT,
@@ -1659,15 +1768,28 @@ describe('Integration Tests', () => {
       ]);
     });
 
-    it('should tolerate attempts to destroy an unmanaged resource', async () => {
+    it('should reject attempts to destroy an unmanaged resource when the pool has not been started', async () => {
+      const factory = new TestFactory();
+      const pool = new XPool({ factory });
+
+      await rejects(() => pool.destroy(1), (error) => {
+        eq(error.message, 'The pool has not been started');
+        return true;
+      });
+    });
+
+    it('should tolerate attempts to destroy an unmanaged resource when the pool has been started', async () => {
       const factory = new TestFactory();
       const pool = new XPool({ factory });
       const eventLog = new EventLog(pool);
 
-      await pool.destroy(2);
+      await pool.start();
+      await pool.destroy(1);
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 0, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 0 });
-      eq(eventLog.events, []);
+      eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
+      ]);
     });
 
     it('should maintain the minimum pool size', async () => {
@@ -1685,6 +1807,7 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTROYED,
         XPoolEvents.RESOURCE_CREATED,
@@ -1723,6 +1846,7 @@ describe('Integration Tests', () => {
       eq(eventLog.events, [
         XPoolEvents.RESOURCE_CREATED,
         XPoolEvents.RESOURCE_RELEASED,
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_DESTROYED,
         XPoolEvents.RESOURCE_CREATION_ERROR,
@@ -1735,7 +1859,7 @@ describe('Integration Tests', () => {
   describe('with', () => {
     it('should acquire and release resources', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new XPool({ factory, minPoolSize: 1 });
+      const pool = new XPool({ factory });
       const eventLog = new EventLog(pool);
 
       await pool.start();
@@ -1745,8 +1869,8 @@ describe('Integration Tests', () => {
 
       eq(pool.stats(), { queued: 0, initialising: 0, idle: 1, acquired: 0, reinstating: 0, doomed: 0, timedout: 0, zombie: 0, size: 1 });
       eq(eventLog.events, [
+        XPoolEvents.POOL_STARTED,
         XPoolEvents.RESOURCE_CREATED,
-        XPoolEvents.RESOURCE_RELEASED,
         XPoolEvents.RESOURCE_ACQUIRED,
         XPoolEvents.RESOURCE_RELEASED,
       ]);
