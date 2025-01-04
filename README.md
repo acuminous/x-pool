@@ -30,3 +30,5 @@ Do not catch all errors - instead check to ensure that it is and error that XPoo
 Close the pool when all resources have been zombied
 
 Check that requeueing a request during start does not lose the debug context
+
+Emit state notifications from a new _onEnter method. Prior to this you will need to create an additional state for Validated (rather than going directly to ready) with an explicit state transition to ready(). skipValidation() should go directly to ready. Similarily reset should tranition to Ready where it can be made idle or destroyed. Skipping reset should go directly to ready. Sam bag for the Queue states
