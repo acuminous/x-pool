@@ -32,3 +32,79 @@ Close the pool when all resources have been zombied
 Check that requeueing a request during start does not lose the debug context
 
 Emit state notifications from a new _onEnter method. Prior to this you will need to create an additional state for Validated (rather than going directly to ready) with an explicit state transition to ready(). skipValidation() should go directly to ready. Similarily reset should tranition to Ready where it can be made idle or destroyed. Skipping reset should go directly to ready. Sam bag for the Queue states
+
+
+<pre>
+                                                  ┌─────────────────────────┐
+                                                  │                         │
+                                                  │           New           │
+                                                  │                         │
+                                                  └─────────────────────────┘
+                                                               │ reserve
+                                                               │
+                                                               │
+                                                               ▼
+                                                  ┌─────────────────────────┐
+                                                  │                         │
+                                                  │          Empty          │
+                                                  │                         │
+                                                  └─────────────────────────┘
+                                                               ○ provision
+                                                               │
+                                                               │
+                                                               ▼
+                                                  ┌─────────────────────────┐
+                                                  │                         │
+┌────────────────────────────────────────────────▶│       Provisioned       │
+│                                                 │                         │
+│                                                 └─────────────────────────┘
+│                                                     ○ validate        │ ready
+│                                                     │                 │
+│                                                     │                 │
+│                                                     │                 │                       ┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                                     ▼                 │                       │                                                                                  │
+│                                        ┌─────────────────────────┐    │                       │                           Empty, Provisioned, Acquired                           │
+│                                        │                         │    │                       │                                                                                  │
+│                                        │        Validated        │    │                       └──────────────────────────────────────────────────────────────────────────────────┘
+│                                        │                         │    │                                    │ timeout                    │ error                     │ abandon
+│                                        └─────────────────────────┘    │                                    │                            │                           │
+│                                                     ○ ready           │                                    │                            │                           │
+│                                                     │                 │                                    │                            │                           │
+│                                                     │                 │                                    ▼                            │                           ▼
+│                                                     │                 │                       ┌─────────────────────────┐               │              ┌─────────────────────────┐
+│                                                     ▼                 ▼                       │                         │               │              │                         │
+│    ┌─────────────────────────┐                  ┌─────────────────────────┐                   │   Segregated &#x231B;   │               │              │   Abandoned &#x231B;    │
+│    │                         │          acquire │                         │                   │                         │               │              │                         │
+│    │                         │◀─────────────────│                         │                   └─────────────────────────┘               │              └─────────────────────────┘
+│    │                         │                  │                         │                                │ destroy                    │                           │ destroy
+│    │        Acquired         │                  │                         │                                │                            │                           │
+│    │                         │                  │                         │                                │                            │                           │
+│    │                         │ ready            │                         │                                │                            │                           │
+│    │                         │─────────────────▶│                         │                                ▼                            ▼                           ▼
+│    │                         │                  │                         │                   ┌──────────────────────────────────────────────────────────────────────────────────┐
+│    └─────────────────────────┘                  │                         │ destroy           │                                                                                  │
+│                 ○ reset                         │          Ready          │──────────────────▶│                                      Doomed                                      │
+│                 │                               │                         │                   │                                                                                  │
+│                 │                               │                         │                   └──────────────────────────────────────────────────────────────────────────────────┘
+│                 │                               │                         │                                ○ success                   │ timeout                    │ error
+│                 ▼                               │                         │                                │                           │                            │
+│    ┌─────────────────────────┐                  │                         │                                │                           │                            │
+│    │                         │ ready            │                         │                                │                           │                            │
+│    │          Reset          │─────────────────▶│                         │                                │                           │                            │
+│    │                         │                  │                         │                                │                           ▼                            │
+│    └─────────────────────────┘                  │                         │                                │              ┌─────────────────────────┐               │
+│                                                 └─────────────────────────┘                                │      success │                         │ error         │
+│                                                              │ release                                     │◀─────────────│   Segregated &#x231B;   │─────────────▶ │
+│                                                              │                                             │              │                         │               │
+│                                                              │                                             │              └─────────────────────────┘               │
+│                                                              │                                             │                                                        │
+│                                                              │                                             │                                                        │
+│                                                              │                                             │                                                        │
+│                                                              │                                             │                                                        │
+│                                                              ▼                                             ▼                                                        ▼
+│                                                 ┌─────────────────────────┐                   ╔═════════════════════════╗                              ╔═════════════════════════╗
+│                                         reserve │                         │                   ║                         ║                              ║                         ║
+└────────────────────────────────────────────────○│          Idle           │                   ║        Destroyed        ║                              ║         Zombie          ║
+                                                  │                         │                   ║                         ║                              ║                         ║
+                                                  └─────────────────────────┘                   ╚═════════════════════════╝                              ╚═════════════════════════╝
+                                                </pre>
