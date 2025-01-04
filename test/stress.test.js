@@ -9,7 +9,7 @@ const { XPool } = require('..');
 
 const seed = Math.floor(Math.random() * 1000);
 
-describe(`stress (seed = ${seed})`, () => {
+describe(`Stress (seed = ${seed})`, () => {
 
   Math.random = seedrandom(seed);
 

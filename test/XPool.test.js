@@ -14,24 +14,7 @@ describe('Integration Tests', () => {
   });
 
   describe('events', () => {
-    it('should report errors thrown in custom resource handlers', async (t, done) => {
-      const factory = new TestFactory([{ resource: 1 }]);
-      const pool = new XPool({ factory, minPoolSize: 1 });
-
-      pool.on(XPoolEvents.RESOURCE_CREATED, () => {
-        throw new Error('Oh Noes!');
-      });
-
-      pool.on(XPoolEvents.POOL_ERROR, ({ error }) => {
-        eq(error.message, 'Custom event handlers must not throw errors');
-        eq(error.cause.message, 'Oh Noes!');
-        done();
-      });
-
-      await pool.start();
-    });
-
-    it('should disable the pool when errors thrown in custom resource handlers', async () => {
+    it('should disable the pool when an error is thrown from custom resource handlers', async () => {
       const factory = new TestFactory([{ resource: 1 }]);
       const pool = new XPool({ factory, minPoolSize: 1 });
 
