@@ -57,7 +57,7 @@ describe('Integration Tests', () => {
           eq(error.cause.message, 'Custom event handlers must not throw errors');
           return true;
         });
-      };
+      }
     });
   });
 
