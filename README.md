@@ -33,7 +33,7 @@ Check that requeueing a request during start does not lose the debug context
 
 Emit state notifications from a new _onEnter method. Prior to this you will need to create an additional state for Validated (rather than going directly to ready) with an explicit state transition to ready(). skipValidation() should go directly to ready. Similarily reset should tranition to Ready where it can be made idle or destroyed. Skipping reset should go directly to ready. Sam bag for the Queue states
 
-
+### Bay State Diagram
 <pre>
                                                   ┌─────────────────────────┐
                                                   │                         │
@@ -66,14 +66,14 @@ Emit state notifications from a new _onEnter method. Prior to this you will need
 │                                        ┌─────────────────────────┐    │                       │                           Empty, Provisioned, Acquired                           │
 │                                        │                         │    │                       │                                                                                  │
 │                                        │        Validated        │    │                       └──────────────────────────────────────────────────────────────────────────────────┘
-│                                        │                         │    │                                    │ timeout                    │ error                     │ abandon
-│                                        └─────────────────────────┘    │                                    │                            │                           │
+│                                        │                         │    │                                    │ factory timeout            │ error                     │ pool timeout
+│                                        └─────────────────────────┘    │                                    │ (create, validate, reset)  │                           │ (start, stop, acquire)
 │                                                     ○ ready           │                                    │                            │                           │
 │                                                     │                 │                                    │                            │                           │
 │                                                     │                 │                                    ▼                            │                           ▼
 │                                                     │                 │                       ┌─────────────────────────┐               │              ┌─────────────────────────┐
 │                                                     ▼                 ▼                       │                         │               │              │                         │
-│    ┌─────────────────────────┐                  ┌─────────────────────────┐                   │     ⌛ Segregated       │               │              │     ⌛ Abandoned        │
+│    ┌─────────────────────────┐                  ┌─────────────────────────┐                   │     ⌛ Timedout         │               │              │     ⌛ Abandoned        │
 │    │                         │          acquire │                         │                   │                         │               │              │                         │
 │    │                         │◀─────────────────│                         │                   └─────────────────────────┘               │              └─────────────────────────┘
 │    │                         │                  │                         │                                │ destroy                    │                           │ destroy
@@ -86,7 +86,7 @@ Emit state notifications from a new _onEnter method. Prior to this you will need
 │                 ○ reset                         │          Ready          │──────────────────▶│                                      Doomed                                      │
 │                 │                               │                         │                   │                                                                                  │
 │                 │                               │                         │                   └──────────────────────────────────────────────────────────────────────────────────┘
-│                 │                               │                         │                                ○ success                    │ timeout                   │ error
+│                 │                               │                         │                                ○ success                    │ destroy timeout           │ error
 │                 ▼                               │                         │                                │                            │                           │
 │    ┌─────────────────────────┐                  │                         │                                │                            │                           │
 │    │                         │ ready            │                         │                                │                            │                           │
