@@ -107,4 +107,4 @@ Emit state notifications from a new _onEnter method. Prior to this you will need
 └────────────────────────────────────────────────○│          Idle           │                   ║        Destroyed        ║                              ║         Zombie          ║
                                                   │                         │                   ║                         ║                              ║                         ║
                                                   └─────────────────────────┘                   ╚═════════════════════════╝                              ╚═════════════════════════╝
-                                                </pre>
+</pre>
