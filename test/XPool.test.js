@@ -22,13 +22,42 @@ describe('Integration Tests', () => {
         throw new Error('Oh Noes!');
       });
 
-      pool.on('error', ({ error }) => {
+      pool.on(XPoolEvents.POOL_ERROR, ({ error }) => {
         eq(error.message, 'Custom event handlers must not throw errors');
         eq(error.cause.message, 'Oh Noes!');
         done();
       });
 
       await pool.start();
+    });
+
+    it('should disable the pool when errors thrown in custom resource handlers', async () => {
+      const factory = new TestFactory([{ resource: 1 }]);
+      const pool = new XPool({ factory, minPoolSize: 1 });
+
+      pool.on(XPoolEvents.RESOURCE_CREATED, () => {
+        throw new Error('Oh Noes!');
+      });
+
+      await pool.start();
+
+      await scheduler.wait(500);
+
+      const operations = [
+        () => pool.start(),
+        () => pool.acquire(),
+        () => pool.release(),
+        () => pool.destroy(),
+        () => pool.stop(),
+      ];
+
+      for (let i = 0; i < operations.length; i++) {
+        await rejects(operations[i], (error) => {
+          eq(error.message, 'The pool has been disabled');
+          eq(error.cause.message, 'Custom event handlers must not throw errors');
+          return true;
+        });
+      };
     });
   });
 
